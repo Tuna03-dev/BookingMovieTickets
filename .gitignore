@@ -1,2 +1,31 @@
-.vs/
+# .NET Core
+bin/
+obj/
+*.csproj.user
+*.suo
+*.cache
+*.pdb
+*.user
+*.userosscache
+*.sln.docstates
+
+# Thư mục build và debug
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+
+# Thư mục gói NuGet
+packages/
+*.nupkg
+*.snupkg
+
+# Tệp log
+*.log
+
+# Thư mục Visual Studio / VS Code
 .vscode/
+.idea/
+*.vs/
+*.vscode/
+*.idea/
