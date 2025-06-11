@@ -1,4 +1,5 @@
 using BookingMovieTickets.Data;
+using BookingMovieTickets.Extensions;
 using BookingMovieTickets.Models;
 using BookingMovieTickets.Services.Jwts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -12,6 +13,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddApplicationServices();
+builder.Services.AddRepositories();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

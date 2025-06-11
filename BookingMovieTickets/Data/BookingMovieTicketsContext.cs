@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace BookingMovieTickets.Data
 {
@@ -164,6 +165,33 @@ namespace BookingMovieTickets.Data
             modelBuilder.Entity<BookingQrCode>().HasQueryFilter(bq => bq.DeletedAt == null);
             modelBuilder.Entity<Payment>().HasQueryFilter(p => p.DeletedAt == null);
             modelBuilder.Entity<Notification>().HasQueryFilter(n => n.DeletedAt == null);
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+            {
+
+                switch (entry.State)
+                {
+                    case EntityState.Added:
+                        entry.Entity.CreatedAt = DateTime.Now;
+                        entry.Entity.UpdatedAt = DateTime.Now;
+                        break;
+
+                    case EntityState.Modified:
+                        entry.Entity.UpdatedAt = DateTime.Now;
+                        break;
+
+                    case EntityState.Deleted:
+                        entry.State = EntityState.Modified;
+                        entry.Entity.DeletedAt = DateTime.Now;
+                        break;
+                }
+
+            }
+
+            return base.SaveChangesAsync(cancellationToken);
         }
     }
 }
