@@ -1,76 +1,65 @@
+using AutoMapper;
 using BookingMovieTickets.DTOs;
+using BookingMovieTickets.DTOs.Responses;
 using BookingMovieTickets.Models;
 using BookingMovieTickets.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+
 
 namespace BookingMovieTickets.Services.Implements
 {
     public class CinemaService : ICinemaService
     {
         private readonly ICinemaRepository _cinemaRepository;
+        private readonly IMapper _mapper;
 
-        public CinemaService(ICinemaRepository cinemaRepository)
+        public CinemaService(ICinemaRepository cinemaRepository, IMapper mapper)
         {
             _cinemaRepository = cinemaRepository;
+            _mapper = mapper;
         }
 
-        public async Task<IEnumerable<CinemaResponseDTO>> GetAllAsync()
+        public async Task<CinemaResponseDTO> CreateAsync(CreateCinemaDTO createCinemaDTO)
         {
+            var cinema = _mapper.Map<Cinema>(createCinemaDTO);
+            var created = await _cinemaRepository.CreateAsync(cinema);
+            return _mapper.Map<CinemaResponseDTO>(created);
+        }
+
+        public async Task<bool> DeleteAsync(Guid id)
+        {
+            var exists = await _cinemaRepository.ExistsAsync(id);
+            if (!exists) return false;
+
+            return await _cinemaRepository.DeleteAsync(id);
+        }
+
+        public async Task<PaginatedResponse<CinemaResponseDTO>> GetAllAsync()
+        {
+            
             var cinemas = await _cinemaRepository.GetAllAsync();
-            return cinemas.Select(MapToResponseDTO);
+            var result = _mapper.Map<List<CinemaResponseDTO>>(cinemas);
+
+            return new PaginatedResponse<CinemaResponseDTO>
+            {
+                Items = result,
+                TotalItems = result.Count,
+                PageNumber = 1,
+                PageSize = result.Count,
+                TotalPages = 1
+            };
         }
 
         public async Task<CinemaResponseDTO?> GetByIdAsync(Guid id)
         {
             var cinema = await _cinemaRepository.GetByIdAsync(id);
-            return cinema != null ? MapToResponseDTO(cinema) : null;
-        }
-
-        public async Task<CinemaResponseDTO> CreateAsync(CreateCinemaDTO createCinemaDTO)
-        {
-            var cinema = new Cinema
-            {
-                Name = createCinemaDTO.Name,
-                Address = createCinemaDTO.Address,
-                City = createCinemaDTO.City
-            };
-
-            var createdCinema = await _cinemaRepository.CreateAsync(cinema);
-            return MapToResponseDTO(createdCinema);
+            return cinema == null ? null : _mapper.Map<CinemaResponseDTO>(cinema);
         }
 
         public async Task<CinemaResponseDTO?> UpdateAsync(Guid id, UpdateCinemaDTO updateCinemaDTO)
         {
-            var cinema = new Cinema
-            {
-                Name = updateCinemaDTO.Name,
-                Address = updateCinemaDTO.Address,
-                City = updateCinemaDTO.City
-            };
-
-            var updatedCinema = await _cinemaRepository.UpdateAsync(id, cinema);
-            return updatedCinema != null ? MapToResponseDTO(updatedCinema) : null;
-        }
-
-        public async Task<bool> DeleteAsync(Guid id)
-        {
-            return await _cinemaRepository.DeleteAsync(id);
-        }
-
-        private static CinemaResponseDTO MapToResponseDTO(Cinema cinema)
-        {
-            return new CinemaResponseDTO
-            {
-                CinemaId = cinema.CinemaId,
-                Name = cinema.Name,
-                Address = cinema.Address,
-                City = cinema.City,
-                CreatedAt = cinema.CreatedAt,
-                UpdatedAt = cinema.UpdatedAt
-            };
+            var cinemaToUpdate = _mapper.Map<Cinema>(updateCinemaDTO);
+            var updatedCinema = await _cinemaRepository.UpdateAsync(id, cinemaToUpdate);
+            return updatedCinema == null ? null : _mapper.Map<CinemaResponseDTO>(updatedCinema);
         }
     }
 }

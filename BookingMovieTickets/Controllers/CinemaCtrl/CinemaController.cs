@@ -1,4 +1,5 @@
 using BookingMovieTickets.DTOs;
+using BookingMovieTickets.DTOs.Responses;
 using BookingMovieTickets.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +21,7 @@ namespace BookingMovieTickets.Controllers.CinemaCtrl
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CinemaResponseDTO>>> GetAll()
+        public async Task<ActionResult<PaginatedResponse<CinemaResponseDTO>>> GetAll()
         {
             var cinemas = await _cinemaService.GetAllAsync();
             return Ok(cinemas);
@@ -37,7 +38,6 @@ namespace BookingMovieTickets.Controllers.CinemaCtrl
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<CinemaResponseDTO>> Create(CreateCinemaDTO createCinemaDTO)
         {
             var cinema = await _cinemaService.CreateAsync(createCinemaDTO);
@@ -45,7 +45,6 @@ namespace BookingMovieTickets.Controllers.CinemaCtrl
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<CinemaResponseDTO>> Update(Guid id, UpdateCinemaDTO updateCinemaDTO)
         {
             var cinema = await _cinemaService.UpdateAsync(id, updateCinemaDTO);
@@ -56,7 +55,6 @@ namespace BookingMovieTickets.Controllers.CinemaCtrl
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> Delete(Guid id)
         {
             var result = await _cinemaService.DeleteAsync(id);

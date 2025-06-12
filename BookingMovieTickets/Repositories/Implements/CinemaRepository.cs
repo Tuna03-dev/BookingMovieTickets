@@ -19,20 +19,18 @@ namespace BookingMovieTickets.Repositories.Implements
         public async Task<IEnumerable<Cinema>> GetAllAsync()
         {
             return await _context.Cinemas
-                .Where(c => c.DeletedAt == null)
                 .ToListAsync();
         }
 
         public async Task<Cinema?> GetByIdAsync(Guid id)
         {
             return await _context.Cinemas
-                .FirstOrDefaultAsync(c => c.CinemaId == id && c.DeletedAt == null);
+                .FirstOrDefaultAsync(c => c.CinemaId == id);
         }
 
         public async Task<Cinema> CreateAsync(Cinema cinema)
         {
             cinema.CinemaId = Guid.NewGuid();
-            cinema.CreatedAt = DateTime.UtcNow;
             _context.Cinemas.Add(cinema);
             await _context.SaveChangesAsync();
             return cinema;
@@ -41,7 +39,7 @@ namespace BookingMovieTickets.Repositories.Implements
         public async Task<Cinema?> UpdateAsync(Guid id, Cinema cinema)
         {
             var existingCinema = await _context.Cinemas
-                .FirstOrDefaultAsync(c => c.CinemaId == id && c.DeletedAt == null);
+                .FirstOrDefaultAsync(c => c.CinemaId == id);
 
             if (existingCinema == null)
                 return null;
@@ -49,7 +47,6 @@ namespace BookingMovieTickets.Repositories.Implements
             existingCinema.Name = cinema.Name;
             existingCinema.Address = cinema.Address;
             existingCinema.City = cinema.City;
-            existingCinema.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return existingCinema;
@@ -58,12 +55,11 @@ namespace BookingMovieTickets.Repositories.Implements
         public async Task<bool> DeleteAsync(Guid id)
         {
             var cinema = await _context.Cinemas
-                .FirstOrDefaultAsync(c => c.CinemaId == id && c.DeletedAt == null);
+                .FirstOrDefaultAsync(c => c.CinemaId == id );
 
             if (cinema == null)
                 return false;
 
-            cinema.DeletedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return true;
         }
@@ -71,7 +67,7 @@ namespace BookingMovieTickets.Repositories.Implements
         public async Task<bool> ExistsAsync(Guid id)
         {
             return await _context.Cinemas
-                .AnyAsync(c => c.CinemaId == id && c.DeletedAt == null);
+                .AnyAsync(c => c.CinemaId == id);
         }
     }
 }
