@@ -2,6 +2,9 @@
 using BookingMovieTickets.Repositories.Implements;
 using BookingMovieTickets.Services;
 using BookingMovieTickets.Services.Implements;
+using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
+using Microsoft.Extensions.Configuration;
 
 namespace BookingMovieTickets.Extensions
 {
@@ -20,6 +23,14 @@ namespace BookingMovieTickets.Extensions
             services.AddScoped<IMovieRepository, MovieRepository>();
             services.AddScoped<ICinemaRepository, CinemaRepository>();
 
+            return services;
+        }
+
+        public static IServiceCollection AddRedisServices(this IServiceCollection services, IConfiguration configuration)
+        {
+            var redisConnectionString = configuration.GetSection("Redis")?["ConnectionString"];
+            services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
+            services.AddScoped<IRedisService, RedisService>();
             return services;
         }
     }

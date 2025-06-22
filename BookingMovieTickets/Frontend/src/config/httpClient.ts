@@ -9,7 +9,7 @@ const removeTokens = (): void => {
   localStorage.removeItem('refreshToken');
 };
 
-// Create Axios instance
+
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: ENV.API_URL,
   timeout: ENV.TIMEOUT,

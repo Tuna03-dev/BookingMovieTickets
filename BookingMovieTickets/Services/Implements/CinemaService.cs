@@ -21,7 +21,7 @@ namespace BookingMovieTickets.Services.Implements
         public async Task<CinemaResponseDTO> CreateAsync(CreateCinemaDTO createCinemaDTO)
         {
             var cinema = _mapper.Map<Cinema>(createCinemaDTO);
-            var created = await _cinemaRepository.CreateAsync(cinema);
+            var created = await _cinemaRepository.AddAsync(cinema);
             return _mapper.Map<CinemaResponseDTO>(created);
         }
 

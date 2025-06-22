@@ -1,32 +1,23 @@
 ﻿using BookingMovieTickets.Data;
 using BookingMovieTickets.DTOs.Responses;
 using BookingMovieTickets.Models;
+using BookingMovieTickets.Repositories.Implements;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace BookingMovieTickets.Repositories.Implements
 {
-    public class MovieRepository : IMovieRepository
+    public class MovieRepository : BaseRepository<Movie>, IMovieRepository
     {
-        private readonly BookingMovieTicketsContext _context;
-
-        public MovieRepository(BookingMovieTicketsContext context)
+        public MovieRepository(BookingMovieTicketsContext context) : base(context)
         {
-            _context = context;
-        }
-
-        public Task<Movie> AddAsync(Movie movie)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task DeleteAsync(Guid id)
-        {
-            throw new NotImplementedException();
         }
 
         public async Task<PaginatedResponse<Movie>> GetAllMoviesAsync(int pageNumber, int pageSize)
         {
-            var query = _context.Movies.AsQueryable().OrderByDescending(m => m.CreatedAt);
+            var query = _dbSet.AsQueryable().OrderByDescending(m => m.CreatedAt);
             var totalItems = await query.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
             var movies = await query
@@ -44,12 +35,20 @@ namespace BookingMovieTickets.Repositories.Implements
             };
         }
 
-        public Task<Movie?> GetByIdAsync(Guid id)
+        public Task<Movie> AddAsync(Movie movie)
         {
             throw new NotImplementedException();
         }
 
-        
+        public Task DeleteAsync(Guid id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Movie?> GetByIdAsync(Guid id)
+        {
+            throw new NotImplementedException();
+        }
 
         public Task<Movie> UpdateAsync(Movie movie)
         {
