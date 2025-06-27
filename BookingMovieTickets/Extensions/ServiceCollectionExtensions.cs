@@ -14,7 +14,7 @@ namespace BookingMovieTickets.Extensions
         {
             services.AddScoped<IMovieService, MovieService>();
             services.AddScoped<ICinemaService, CinemaService>();
-
+            services.AddScoped<IStatsService, StatsService>();
             return services;
         }
 
@@ -22,7 +22,7 @@ namespace BookingMovieTickets.Extensions
         {
             services.AddScoped<IMovieRepository, MovieRepository>();
             services.AddScoped<ICinemaRepository, CinemaRepository>();
-
+            services.AddScoped<IStatsRepository, StatsRepository>();
             return services;
         }
 

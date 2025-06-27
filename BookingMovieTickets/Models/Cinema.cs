@@ -18,5 +18,6 @@ public partial class Cinema : BaseEntity
     [StringLength(100)]
     public string? City { get; set; }
 
+    public string? ImageUrl { get; set; }
     public virtual ICollection<Room> Rooms { get; set; } = new List<Room>();
 }

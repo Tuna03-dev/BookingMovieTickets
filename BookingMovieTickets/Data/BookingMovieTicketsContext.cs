@@ -138,7 +138,7 @@ namespace BookingMovieTickets.Data
                 .ValueGeneratedOnAddOrUpdate();
 
             // Configure default values
-            modelBuilder.Entity<IdentityRole<Guid>>().Property(r => r.Name).HasDefaultValue("user");
+            modelBuilder.Entity<IdentityRole<Guid>>().Property(r => r.Name).HasDefaultValue("User");
             modelBuilder.Entity<Seat>().Property(s => s.SeatType).HasDefaultValue("standard");
             modelBuilder.Entity<Seat>().Property(s => s.IsAvailable).HasDefaultValue(true);
             modelBuilder.Entity<Movie>().Property(m => m.Status).HasDefaultValue("upcoming");
@@ -147,13 +147,9 @@ namespace BookingMovieTickets.Data
             modelBuilder.Entity<Payment>().Property(p => p.PaymentStatus).HasDefaultValue("pending");
             modelBuilder.Entity<Notification>().Property(n => n.Status).HasDefaultValue("pending");
 
-            // Configure CHECK constraints
-            modelBuilder.Entity<Showtime>()
-                .HasCheckConstraint("CK_Showtime_EndTime", "[EndTime] > [StartTime]");
 
             // Global Query Filters for Soft Delete
             modelBuilder.Entity<User>().HasQueryFilter(u => u.DeletedAt == null);
-            modelBuilder.Entity<IdentityRole<Guid>>().HasQueryFilter(r => !EF.Property<DateTime?>(r, "DeletedAt").HasValue);
             modelBuilder.Entity<Movie>().HasQueryFilter(m => m.DeletedAt == null);
             modelBuilder.Entity<Cinema>().HasQueryFilter(c => c.DeletedAt == null);
             modelBuilder.Entity<Room>().HasQueryFilter(r => r.DeletedAt == null);
@@ -165,6 +161,7 @@ namespace BookingMovieTickets.Data
             modelBuilder.Entity<BookingQrCode>().HasQueryFilter(bq => bq.DeletedAt == null);
             modelBuilder.Entity<Payment>().HasQueryFilter(p => p.DeletedAt == null);
             modelBuilder.Entity<Notification>().HasQueryFilter(n => n.DeletedAt == null);
+            modelBuilder.Entity<TimeSlot>().HasQueryFilter(n => n.DeletedAt == null);
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

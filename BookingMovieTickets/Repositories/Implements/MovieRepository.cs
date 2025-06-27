@@ -4,15 +4,23 @@ using BookingMovieTickets.Models;
 using BookingMovieTickets.Repositories.Implements;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using BookingMovieTickets.DTOs;
 
 namespace BookingMovieTickets.Repositories.Implements
 {
     public class MovieRepository : BaseRepository<Movie>, IMovieRepository
     {
-        public MovieRepository(BookingMovieTicketsContext context) : base(context)
+        private readonly BookingMovieTicketsContext _context;
+        private readonly IMapper _mapper;
+
+        public MovieRepository(BookingMovieTicketsContext context, IMapper mapper) : base(context)
         {
+            _context = context;
+            _mapper = mapper;
         }
 
         public async Task<PaginatedResponse<Movie>> GetAllMoviesAsync(int pageNumber, int pageSize)
@@ -35,24 +43,56 @@ namespace BookingMovieTickets.Repositories.Implements
             };
         }
 
-        public Task<Movie> AddAsync(Movie movie)
+
+        public async Task<Movie> GetFeaturedMovieAsync()
         {
-            throw new NotImplementedException();
+           
+            return await _context.Movies
+                .Where(m => m.ReleaseDate != null && m.ReleaseDate <= DateOnly.FromDateTime(DateTime.Today))
+                .OrderByDescending(m => m.ReleaseDate)
+                .FirstOrDefaultAsync();
         }
 
-        public Task DeleteAsync(Guid id)
+        public async Task<List<Movie>> GetNowShowingMoviesAsync()
         {
-            throw new NotImplementedException();
+            // Phim đang chiếu: ReleaseDate <= hôm nay
+            return await _context.Movies
+                .Where(m => m.ReleaseDate != null && m.ReleaseDate <= DateOnly.FromDateTime(DateTime.Today))
+                .OrderByDescending(m => m.ReleaseDate)
+                .ToListAsync();
         }
 
-        public Task<Movie?> GetByIdAsync(Guid id)
+        public async Task<List<Movie>> GetComingSoonMoviesAsync()
         {
-            throw new NotImplementedException();
+            // Phim sắp chiếu: ReleaseDate > hôm nay
+            return await _context.Movies
+                .Where(m => m.ReleaseDate != null && m.ReleaseDate > DateOnly.FromDateTime(DateTime.Today))
+                .OrderBy(m => m.ReleaseDate)
+                .ToListAsync();
         }
 
-        public Task<Movie> UpdateAsync(Movie movie)
+        public async Task<List<CinemaShowtimeDTO>> GetShowtimesByMovieAndDateAsync(Guid movieId, DateTime date)
         {
-            throw new NotImplementedException();
+            var showtimes = await _context.Showtimes
+                .Include(s => s.Movie)
+                .Include(s => s.Room)
+                    .ThenInclude(r => r.Cinema)
+                .Where(s => s.MovieId == movieId && s.Date == date.Date)
+                .OrderBy(s => s.Date)
+                .ToListAsync();
+
+            var cinemaGroups = showtimes
+                .GroupBy(s => s.Room.Cinema)
+                .Select(group => new CinemaShowtimeDTO
+                {
+                    CinemaId = group.Key.CinemaId,
+                    CinemaName = group.Key.Name,
+                    CinemaAddress = group.Key.Address,
+                    Showtimes = group.Select(s => _mapper.Map<ShowtimeResponseDTO>(s)).ToList()
+                })
+                .ToList();
+
+            return cinemaGroups;
         }
     }
 }

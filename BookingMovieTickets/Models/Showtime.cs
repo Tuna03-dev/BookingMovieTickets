@@ -13,9 +13,9 @@ public partial class Showtime : BaseEntity
 
     public Guid RoomId { get; set; }
 
-    public DateTime StartTime { get; set; }
+    public DateTime Date { get; set; } 
 
-    public DateTime EndTime { get; set; }
+    public Guid TimeSlotId { get; set; } 
 
     [Column(TypeName = "decimal(10,2)")]
     public decimal TicketPrice { get; set; }
@@ -23,6 +23,8 @@ public partial class Showtime : BaseEntity
     public virtual Movie Movie { get; set; } = null!;
 
     public virtual Room Room { get; set; } = null!;
+
+    public virtual TimeSlot TimeSlot { get; set; } = null!;
 
     public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 }

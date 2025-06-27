@@ -15,6 +15,9 @@ namespace BookingMovieTickets.DTOs
 
         [StringLength(100)]
         public string? City { get; set; }
+
+        public string? ImageUrl { get; set; }
+
     }
 
     public class UpdateCinemaDTO
@@ -29,6 +32,9 @@ namespace BookingMovieTickets.DTOs
 
         [StringLength(100)]
         public string? City { get; set; }
+
+        public string? ImageUrl { get; set; }
+
     }
 
     public class CinemaResponseDTO
@@ -37,7 +43,11 @@ namespace BookingMovieTickets.DTOs
         public string Name { get; set; } = null!;
         public string Address { get; set; } = null!;
         public string? City { get; set; }
+        public string? ImageUrl { get; set; }
+
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+
     }
 } 

@@ -70,20 +70,20 @@ axiosInstance.interceptors.response.use(
 );
 
 export const httpClient = {
-  get: async <T>(url: string, config?: AxiosRequestConfig): Promise<T> =>
-    axiosInstance.get<T>(url, config).then((res) => res.data),
+  get: async <T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.get<T>(url, config),
 
-  post: async <T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> =>
-    axiosInstance.post<T>(url, data, config).then((res) => res.data),
+  post: async <T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.post<T>(url, data, config),
 
-  put: async <T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> =>
-    axiosInstance.put<T>(url, data, config).then((res) => res.data),
+  put: async <T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.put<T>(url, data, config),
 
-  patch: async <T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> =>
-    axiosInstance.patch<T>(url, data, config).then((res) => res.data),
+  patch: async <T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.patch<T>(url, data, config),
 
-  delete: async <T>(url: string, config?: AxiosRequestConfig): Promise<T> =>
-    axiosInstance.delete<T>(url, config).then((res) => res.data),
+  delete: async <T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> =>
+    axiosInstance.delete<T>(url, config),
 };
 
 export default httpClient;

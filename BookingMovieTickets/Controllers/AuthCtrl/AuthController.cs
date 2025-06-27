@@ -8,6 +8,7 @@ using StackExchange.Redis;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using BookingMovieTickets.Services;
+using Microsoft.AspNetCore.Authorization;
 
 
 namespace BookingMovieTickets.Controllers.AuthCtrl
@@ -53,12 +54,24 @@ namespace BookingMovieTickets.Controllers.AuthCtrl
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTimeOffset.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays)
             });
-            return Ok(new { accessToken });
+            var roles = await _userManager.GetRolesAsync(user);
+            return Ok(new
+            {
+                accessToken,
+                role = roles
+            });
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var existingUser = await _userManager.FindByEmailAsync(request.Email);
+            if (existingUser != null)
+                return BadRequest("Email already exists");
+
             var user = new User
             {
                 UserName = request.Email,
@@ -66,11 +79,18 @@ namespace BookingMovieTickets.Controllers.AuthCtrl
                 FullName = request.FullName,
                 PhoneNumber = request.PhoneNumber
             };
+
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
-                return BadRequest(result.Errors);
+                return BadRequest(result.Errors.Select(e => e.Description));
+
+            var roleResult = await _userManager.AddToRoleAsync(user, "User");
+            if (!roleResult.Succeeded)
+                return BadRequest(roleResult.Errors.Select(e => e.Description));
+
             return Ok("Registration successful");
         }
+
 
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshToken()
@@ -101,7 +121,9 @@ namespace BookingMovieTickets.Controllers.AuthCtrl
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTimeOffset.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays)
             });
-            return Ok(new { accessToken = newAccessToken });
+
+            var roles = await _userManager.GetRolesAsync(user);
+            return Ok(new { accessToken = newAccessToken, role = roles });
         }
 
         [HttpPost("logout")]
@@ -122,6 +144,28 @@ namespace BookingMovieTickets.Controllers.AuthCtrl
             // Xóa cookie
             Response.Cookies.Delete("refreshToken");
             return Ok();
+        }
+
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> Me()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return Unauthorized();
+            var roles = await _userManager.GetRolesAsync(user);
+            return Ok(new
+            {
+                id = user.Id,
+                email = user.Email,
+                fullName = user.FullName,
+                phoneNumber = user.PhoneNumber,
+                address = user.Address,
+                roles = roles
+            });
         }
     }
 } 

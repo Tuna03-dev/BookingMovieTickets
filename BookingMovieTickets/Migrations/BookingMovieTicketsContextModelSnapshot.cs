@@ -157,6 +157,9 @@ namespace BookingMovieTickets.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -176,6 +179,9 @@ namespace BookingMovieTickets.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Actors")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime?>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -184,6 +190,10 @@ namespace BookingMovieTickets.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Director")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<int>("Duration")
                         .HasColumnType("int");
@@ -444,10 +454,10 @@ namespace BookingMovieTickets.Migrations
                     b.Property<DateTime?>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("DeletedAt")
+                    b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("EndTime")
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<Guid>("MovieId")
@@ -456,11 +466,11 @@ namespace BookingMovieTickets.Migrations
                     b.Property<Guid>("RoomId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("StartTime")
-                        .HasColumnType("datetime2");
-
                     b.Property<decimal>("TicketPrice")
                         .HasColumnType("decimal(10,2)");
+
+                    b.Property<Guid>("TimeSlotId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -471,10 +481,41 @@ namespace BookingMovieTickets.Migrations
 
                     b.HasIndex("RoomId");
 
+                    b.HasIndex("TimeSlotId");
+
                     b.ToTable("Showtimes", t =>
                         {
                             t.HasCheckConstraint("CK_Showtime_EndTime", "[EndTime] > [StartTime]");
                         });
+                });
+
+            modelBuilder.Entity("BookingMovieTickets.Models.TimeSlot", b =>
+                {
+                    b.Property<Guid>("TimeSlotId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("time");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("TimeSlotId");
+
+                    b.ToTable("TimeSlot");
                 });
 
             modelBuilder.Entity("BookingMovieTickets.Models.User", b =>
@@ -580,7 +621,7 @@ namespace BookingMovieTickets.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)")
-                        .HasDefaultValue("user");
+                        .HasDefaultValue("User");
 
                     b.Property<string>("NormalizedName")
                         .HasMaxLength(256)
@@ -822,9 +863,17 @@ namespace BookingMovieTickets.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("BookingMovieTickets.Models.TimeSlot", "TimeSlot")
+                        .WithMany("Showtimes")
+                        .HasForeignKey("TimeSlotId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Movie");
 
                     b.Navigation("Room");
+
+                    b.Navigation("TimeSlot");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -918,6 +967,11 @@ namespace BookingMovieTickets.Migrations
             modelBuilder.Entity("BookingMovieTickets.Models.Showtime", b =>
                 {
                     b.Navigation("Bookings");
+                });
+
+            modelBuilder.Entity("BookingMovieTickets.Models.TimeSlot", b =>
+                {
+                    b.Navigation("Showtimes");
                 });
 
             modelBuilder.Entity("BookingMovieTickets.Models.User", b =>

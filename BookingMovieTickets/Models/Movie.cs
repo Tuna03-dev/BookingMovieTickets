@@ -21,11 +21,16 @@ public partial class Movie : BaseEntity
 
     public DateOnly? ReleaseDate { get; set; }
 
+
     [StringLength(255)]
     public string? PosterUrl { get; set; }
 
     [Required, StringLength(20)]
     public string Status { get; set; } = null!;
+    [StringLength(100)]
+    public string? Director { get; set; }
+
+    public string? Actors { get; set; }
 
     public virtual ICollection<Showtime> Showtimes { get; set; } = new List<Showtime>();
 }

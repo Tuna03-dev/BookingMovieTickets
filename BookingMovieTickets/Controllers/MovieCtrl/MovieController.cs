@@ -2,6 +2,8 @@
 using BookingMovieTickets.Models;
 using BookingMovieTickets.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.OData.Query;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -18,27 +20,28 @@ namespace BookingMovieTickets.Controllers.MovieCtrl
             _movieService = movieService;
         }
         // GET: api/<MovieController>
-        [HttpGet]
-        public async Task<ActionResult<PaginatedResponse<Movie>>> GetMovies(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10)
+        [HttpGet("odata")]
+        [EnableQuery]
+        public async Task<IActionResult> GetMovies()
         {
-            if (pageNumber < 1)
-                pageNumber = 1;
-            if (pageSize < 1)
-                pageSize = 10;
-            if (pageSize > 50)
-                pageSize = 50;
-
-            var result = await _movieService.GetMoviesAsync(pageNumber, pageSize);
-            return Ok(result);
+            try
+            {
+                var movies = await _movieService.GetAllMoviesQueryable();
+                return Ok(movies);
+            }catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
         // GET api/<MovieController>/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        public async Task<IActionResult> GetById(Guid id)
         {
-            return "value";
+            var movie = await _movieService.GetByIdAsync(id);
+            if (movie == null)
+                return NotFound();
+            return Ok(movie);
         }
 
         // POST api/<MovieController>
@@ -58,5 +61,28 @@ namespace BookingMovieTickets.Controllers.MovieCtrl
         public void Delete(int id)
         {
         }
+
+        [HttpGet("featured")]
+        public async Task<IActionResult> GetFeaturedMovie()
+        {
+            var movie = await _movieService.GetFeaturedMovieAsync();
+            return Ok(movie);
+        }
+
+        [HttpGet("now-showing")]
+        public async Task<IActionResult> GetNowShowingMovies()
+        {
+            var movies = await _movieService.GetNowShowingMoviesAsync();
+            return Ok(movies);
+        }
+
+        [HttpGet("coming-soon")]
+        public async Task<IActionResult> GetComingSoonMovies()
+        {
+            var movies = await _movieService.GetComingSoonMoviesAsync();
+            return Ok(movies);
+        }
+
+        
     }
 }
