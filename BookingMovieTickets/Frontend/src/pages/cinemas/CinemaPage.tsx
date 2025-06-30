@@ -13,7 +13,7 @@ import {
 import { cinemaApis } from "@/services/cinemaApis";
 import type { components } from "@/types/api-types";
 
-type CinemaResponseDTO = components["schemas"]["CinemaResponseDTO"];
+export type CinemaResponseDTO = components["schemas"]["CinemaResponseDTO"];
 
 export default function CinemasPage() {
   const [cinemas, setCinemas] = useState<CinemaResponseDTO[]>([]);

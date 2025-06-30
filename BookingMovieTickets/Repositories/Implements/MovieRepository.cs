@@ -77,8 +77,9 @@ namespace BookingMovieTickets.Repositories.Implements
                 .Include(s => s.Movie)
                 .Include(s => s.Room)
                     .ThenInclude(r => r.Cinema)
-                .Where(s => s.MovieId == movieId && s.Date == date.Date)
-                .OrderBy(s => s.Date)
+                .Include(s => s.TimeSlot)
+                .Where(s => s.MovieId == movieId && s.Date.Date == date.Date)
+                .OrderBy(s => s.TimeSlot.StartTime)
                 .ToListAsync();
 
             var cinemaGroups = showtimes

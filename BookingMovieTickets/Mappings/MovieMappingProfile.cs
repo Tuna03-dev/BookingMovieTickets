@@ -12,8 +12,10 @@ namespace BookingMovieTickets.Mappings
             CreateMap<Movie, MovieResponseDTO>();
             CreateMap<Showtime, ShowtimeResponseDTO>()
                 .ForMember(dest => dest.Cinema, opt => opt.MapFrom(src => src.Room.Cinema))
-                .ForMember(dest => dest.RoomNumber, opt => opt.MapFrom(src => src.Room.RoomNumber));
+                .ForMember(dest => dest.RoomNumber, opt => opt.MapFrom(src => src.Room.RoomNumber))
+                .ForMember(dest => dest.TimeSlot, opt => opt.MapFrom(src => src.TimeSlot));
             CreateMap<Cinema, CinemaResponseDTO>();
+            CreateMap<TimeSlot, TimeSlotDTO>();
             //CreateMap<Movie, MovieDTO>()
             //    .ForMember(dest => dest.GenreName, opt => opt.MapFrom(src => src.Genre.Name))
             //    .ForMember(dest => dest.ReleaseDate, opt => opt.MapFrom(src => src.ReleaseDate.ToString("dd/MM/yyyy")));

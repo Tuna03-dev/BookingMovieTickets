@@ -8,6 +8,8 @@ export interface User {
   fullName?: string;
   phoneNumber?: string;
   roles: unknown[];
+  imageUrl?: string;
+  dateOfBirth?: string;
   [key: string]: unknown;
 }
 

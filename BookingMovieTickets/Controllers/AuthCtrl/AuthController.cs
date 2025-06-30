@@ -164,6 +164,8 @@ namespace BookingMovieTickets.Controllers.AuthCtrl
                 fullName = user.FullName,
                 phoneNumber = user.PhoneNumber,
                 address = user.Address,
+                imageUrl = user.ImageUrl,
+                dateOfBirth = user.DateOfBirth,
                 roles = roles
             });
         }

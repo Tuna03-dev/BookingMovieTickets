@@ -107,7 +107,7 @@ export default function MoviePage() {
           <TabsContent value="showtimes" className="mt-0">
             <div className="bg-gray-900 rounded-lg p-6">
               <h2 className="text-2xl font-bold mb-6">Chọn suất chiếu</h2>
-              <ShowtimeSelector movieId={movieData.movieId} />
+              <ShowtimeSelector movieId={movieData.movieId} movieTitle={movieData.title} />
             </div>
           </TabsContent>
           <TabsContent value="details" className="mt-0">

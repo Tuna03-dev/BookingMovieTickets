@@ -1,51 +1,125 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Calendar } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { useBooking } from "@/hooks/useBooking";
 
+import { showtimeApi } from "@/services/showTimeApi";
 interface ShowtimeSelectorProps {
   movieId: string;
+  movieTitle?: string;
 }
 
-export function ShowtimeSelector({ movieId }: ShowtimeSelectorProps) {
-  const [selectedDate, setSelectedDate] = useState("today");
-  const [selectedCinema, setSelectedCinema] = useState("cinema1");
-  const [selectedTime, setSelectedTime] = useState("");
+interface TimeSlotDTO {
+  timeSlotId: string;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+}
 
-  const dates = [
-    { id: "today", label: "Hôm nay", date: "21 Thg 5" },
-    { id: "tomorrow", label: "Ngày mai", date: "22 Thg 5" },
-    { id: "day3", label: "Thứ Tư", date: "23 Thg 5" },
-    { id: "day4", label: "Thứ Năm", date: "24 Thg 5" },
-    { id: "day5", label: "Thứ Sáu", date: "25 Thg 5" },
-    { id: "day6", label: "Thứ Bảy", date: "26 Thg 5" },
-    { id: "day7", label: "Chủ Nhật", date: "27 Thg 5" },
-  ];
+interface ShowtimeResponseDTO {
+  showtimeId: string;
+  date: string;
+  timeSlotId: string;
+  timeSlot: TimeSlotDTO;
+  ticketPrice: number;
+  roomId: string;
+  roomNumber?: string;
+}
 
-  // Sample cinema data
-  const cinemas = [
-    {
-      id: "cinema1",
-      name: "CineWorld Trung tâm",
-      times: ["10:30", "13:15", "16:00", "19:30", "22:15"],
-      prices: [100000, 100000, 120000, 140000, 120000],
-    },
-    {
-      id: "cinema2",
-      name: "MoviePlex Trung tâm",
-      times: ["11:00", "14:30", "17:45", "20:30"],
-      prices: [90000, 110000, 130000, 150000],
-    },
-    {
-      id: "cinema3",
-      name: "Star Cinemas",
-      times: ["12:15", "15:30", "18:45", "21:30"],
-      prices: [110000, 110000, 130000, 130000],
-    },
-  ];
+interface CinemaShowtimeDTO {
+  cinemaId: string;
+  cinemaName: string;
+  cinemaAddress?: string;
+  showtimes: ShowtimeResponseDTO[];
+}
+
+const getDateList = () => {
+  const today = new Date();
+  const result = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    result.push({
+      id: d.toISOString().split("T")[0],
+      label:
+        i === 0
+          ? "Hôm nay"
+          : i === 1
+          ? "Ngày mai"
+          : d.toLocaleDateString("vi-VN", { weekday: "long" }),
+      date: d.toLocaleDateString("vi-VN", { day: "2-digit", month: "short" }),
+      value: d,
+    });
+  }
+  return result;
+};
+
+export function ShowtimeSelector({ movieId, movieTitle }: ShowtimeSelectorProps) {
+  const { setMovie, setBooking } = useBooking();
+  const [selectedDate, setSelectedDate] = useState(getDateList()[0].id);
+  const [selectedCinema, setSelectedCinema] = useState<string | undefined>(
+    undefined
+  );
+  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [cinemas, setCinemas] = useState<CinemaShowtimeDTO[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const dates = getDateList();
+
+  useEffect(() => {
+    // Set movie info when component mounts
+    if (movieTitle) {
+      setMovie(movieId, movieTitle);
+    }
+  }, [movieId, movieTitle, setMovie]);
+
+  useEffect(() => {
+    async function fetchShowtimes() {
+      setLoading(true);
+      setSelectedCinema(undefined);
+      setSelectedTime("");
+      try {
+        const res = await showtimeApi.getShowtimes(movieId, selectedDate);
+        const data = Array.isArray(res) ? res : [];
+        console.log("Fetched showtimes:", data);
+        setCinemas(data);
+        if (data.length > 0) {
+          setSelectedCinema(data[0].cinemaId);
+        }
+      } catch (err) {
+        console.error(err);
+        setCinemas([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchShowtimes();
+  }, [movieId, selectedDate]);
+
+  const handleShowtimeSelect = (cinema: CinemaShowtimeDTO, showtime: ShowtimeResponseDTO) => {
+    const timeKey = `${cinema.cinemaId}-${showtime.showtimeId}`;
+    setSelectedTime(timeKey);
+
+    // Set booking details using hook
+    setBooking({
+      date: selectedDate,
+      cinema: {
+        cinemaId: cinema.cinemaId,
+        cinemaName: cinema.cinemaName,
+        cinemaAddress: cinema.cinemaAddress,
+      },
+      showtime: {
+        showtimeId: showtime.showtimeId,
+        timeSlot: showtime.timeSlot,
+        ticketPrice: showtime.ticketPrice,
+        roomId: showtime.roomId,
+        roomNumber: showtime.roomNumber || "",
+      },
+    });
+  };
 
   return (
     <div>
@@ -72,59 +146,73 @@ export function ShowtimeSelector({ movieId }: ShowtimeSelectorProps) {
       {/* Chọn rạp */}
       <div className="mb-8">
         <h3 className="text-lg font-semibold mb-4">Chọn rạp</h3>
-        <Tabs
-          value={selectedCinema}
-          onValueChange={setSelectedCinema}
-          className="w-full"
-        >
-          <TabsList className="w-full grid grid-cols-3">
+        {loading ? (
+          <div>Đang tải dữ liệu...</div>
+        ) : cinemas.length === 0 ? (
+          <div>Không có suất chiếu cho ngày này.</div>
+        ) : (
+          <Tabs
+            value={selectedCinema}
+            onValueChange={setSelectedCinema}
+            className="w-full"
+          >
+            <TabsList className={`w-full grid grid-cols-${cinemas.length}`}>
+              {cinemas.map((cinema) => (
+                <TabsTrigger
+                  key={cinema.cinemaId}
+                  value={cinema.cinemaId}
+                  className="data-[state=active]:bg-red-600"
+                >
+                  {cinema.cinemaName}
+                </TabsTrigger>
+              ))}
+            </TabsList>
             {cinemas.map((cinema) => (
-              <TabsTrigger
-                key={cinema.id}
-                value={cinema.id}
-                className="data-[state=active]:bg-red-600"
+              <TabsContent
+                key={cinema.cinemaId}
+                value={cinema.cinemaId}
+                className="mt-4"
               >
-                {cinema.name}
-              </TabsTrigger>
+                <Card className="border-gray-800 bg-gray-800/50">
+                  <CardContent className="p-4">
+                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-white">
+                      <Calendar className="h-4 w-4" />
+                      Suất chiếu cho{" "}
+                      {dates.find((d) => d.id === selectedDate)?.date}
+                    </h4>
+                    <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                      {cinema.showtimes.map((showtime) => (
+                        <Button
+                          key={showtime.showtimeId}
+                          variant={
+                            selectedTime ===
+                            `${cinema.cinemaId}-${showtime.showtimeId}`
+                              ? "default"
+                              : "outline"
+                          }
+                          className={`flex flex-col h-auto py-2 ${
+                            selectedTime ===
+                            `${cinema.cinemaId}-${showtime.showtimeId}`
+                              ? "bg-red-600 hover:bg-red-700"
+                              : ""
+                          }`}
+                          onClick={() => handleShowtimeSelect(cinema, showtime)}
+                        >
+                          <span className="text-sm font-medium">
+                            {showtime.timeSlot?.startTime?.slice(0, 5)}
+                          </span>
+                          <span className="text-xs opacity-80">
+                            {showtime.ticketPrice.toLocaleString()}₫
+                          </span>
+                        </Button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
             ))}
-          </TabsList>
-          {cinemas.map((cinema) => (
-            <TabsContent key={cinema.id} value={cinema.id} className="mt-4">
-              <Card className="border-gray-800 bg-gray-800/50">
-                <CardContent className="p-4">
-                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-white">
-                    <Calendar className="h-4 w-4" />
-                    Suất chiếu cho{" "}
-                    {dates.find((d) => d.id === selectedDate)?.date}
-                  </h4>
-                  <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                    {cinema.times.map((time, index) => (
-                      <Button
-                        key={time}
-                        variant={
-                          selectedTime === `${cinema.id}-${time}`
-                            ? "default"
-                            : "outline"
-                        }
-                        className={`flex flex-col h-auto py-2 ${
-                          selectedTime === `${cinema.id}-${time}`
-                            ? "bg-red-600 hover:bg-red-700"
-                            : ""
-                        }`}
-                        onClick={() => setSelectedTime(`${cinema.id}-${time}`)}
-                      >
-                        <span className="text-sm font-medium">{time}</span>
-                        <span className="text-xs opacity-80">
-                          {cinema.prices[index].toLocaleString()}₫
-                        </span>
-                      </Button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
-        </Tabs>
+          </Tabs>
+        )}
       </div>
 
       {/* Nút tiếp tục */}

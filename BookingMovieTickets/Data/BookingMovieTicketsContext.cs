@@ -18,6 +18,7 @@ namespace BookingMovieTickets.Data
         public DbSet<Room> Rooms { get; set; }
         public DbSet<Seat> Seats { get; set; }
         public DbSet<Showtime> Showtimes { get; set; }
+        public DbSet<TimeSlot> TimeSlot { get; set; }
         public DbSet<Promotion> Promotions { get; set; }
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<BookingSeat> BookingSeats { get; set; }
@@ -44,6 +45,7 @@ namespace BookingMovieTickets.Data
             modelBuilder.Entity<Room>().HasKey(r => r.RoomId);
             modelBuilder.Entity<Seat>().HasKey(s => s.SeatId);
             modelBuilder.Entity<Showtime>().HasKey(s => s.ShowtimeId);
+            modelBuilder.Entity<TimeSlot>().HasKey(t => t.TimeSlotId);
             modelBuilder.Entity<Promotion>().HasKey(p => p.PromotionId);
             modelBuilder.Entity<Booking>().HasKey(b => b.BookingId);
             modelBuilder.Entity<BookingSeat>().HasKey(bs => bs.BookingSeatId);
@@ -79,6 +81,11 @@ namespace BookingMovieTickets.Data
                 .HasOne(s => s.Room)
                 .WithMany(r => r.Showtimes)
                 .HasForeignKey(s => s.RoomId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Showtime>()
+                .HasOne(s => s.TimeSlot)
+                .WithMany(t => t.Showtimes)
+                .HasForeignKey(s => s.TimeSlotId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Booking>()
@@ -140,7 +147,6 @@ namespace BookingMovieTickets.Data
             // Configure default values
             modelBuilder.Entity<IdentityRole<Guid>>().Property(r => r.Name).HasDefaultValue("User");
             modelBuilder.Entity<Seat>().Property(s => s.SeatType).HasDefaultValue("standard");
-            modelBuilder.Entity<Seat>().Property(s => s.IsAvailable).HasDefaultValue(true);
             modelBuilder.Entity<Movie>().Property(m => m.Status).HasDefaultValue("upcoming");
             modelBuilder.Entity<Promotion>().Property(p => p.IsActive).HasDefaultValue(true);
             modelBuilder.Entity<Booking>().Property(b => b.Status).HasDefaultValue("booked");
@@ -155,13 +161,13 @@ namespace BookingMovieTickets.Data
             modelBuilder.Entity<Room>().HasQueryFilter(r => r.DeletedAt == null);
             modelBuilder.Entity<Seat>().HasQueryFilter(s => s.DeletedAt == null);
             modelBuilder.Entity<Showtime>().HasQueryFilter(s => s.DeletedAt == null);
+            modelBuilder.Entity<TimeSlot>().HasQueryFilter(t => t.DeletedAt == null);
             modelBuilder.Entity<Promotion>().HasQueryFilter(p => p.DeletedAt == null);
             modelBuilder.Entity<Booking>().HasQueryFilter(b => b.DeletedAt == null);
             modelBuilder.Entity<BookingSeat>().HasQueryFilter(bs => bs.DeletedAt == null);
             modelBuilder.Entity<BookingQrCode>().HasQueryFilter(bq => bq.DeletedAt == null);
             modelBuilder.Entity<Payment>().HasQueryFilter(p => p.DeletedAt == null);
             modelBuilder.Entity<Notification>().HasQueryFilter(n => n.DeletedAt == null);
-            modelBuilder.Entity<TimeSlot>().HasQueryFilter(n => n.DeletedAt == null);
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

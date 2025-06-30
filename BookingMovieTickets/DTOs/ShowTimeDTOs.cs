@@ -31,4 +31,21 @@
         public TimeSpan EndTime { get; set; }
         public bool IsActive { get; set; }
     }
+
+    public class SeatDTO
+    {
+        public Guid SeatId { get; set; }
+        public string Row { get; set; } = null!;
+        public int SeatColumn { get; set; }
+        public string? SeatNumber { get; set; }
+        public string? SeatType { get; set; }
+        public bool IsAvailable { get; set; }
+    }
+
+    public class SeatStatusDTO
+    {
+        public Guid ShowtimeId { get; set; }
+        public List<SeatDTO> Seats { get; set; } = new();
+        public List<Guid> BookedSeatIds { get; set; } = new();
+    }
 }

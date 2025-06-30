@@ -5,17 +5,19 @@ import storage from 'redux-persist/lib/storage';
 import {useDispatch, useSelector } from 'react-redux';
 import type { TypedUseSelectorHook } from 'react-redux';
 import authReducer from './slices/authSlice';
+import bookingReducer from './slices/bookingSlice';
 // Import các slice reducer ở đây (ví dụ: import authReducer from './authSlice')
 // const rootReducer = combineReducers({ auth: authReducer, ... });
 const rootReducer = combineReducers({
   auth: authReducer,
+  booking: bookingReducer,
   // Thêm các slice reducer ở đây
 });
 
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['auth'], // Persist trạng thái auth
+  whitelist: ['auth', 'booking'], // Persist trạng thái auth và booking
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

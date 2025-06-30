@@ -15,6 +15,11 @@ namespace BookingMovieTickets.Extensions
             services.AddScoped<IMovieService, MovieService>();
             services.AddScoped<ICinemaService, CinemaService>();
             services.AddScoped<IStatsService, StatsService>();
+            services.AddScoped<ISeatService, SeatService>();
+            services.AddScoped<IPaymentRepository, PaymentRepository>();
+            services.AddScoped<IPaymentService, PaymentService>();
+            services.AddScoped<IBookingRepository, BookingRepository>();
+            services.AddScoped<IBookingSeatRepository, BookingSeatRepository>();
             return services;
         }
 
@@ -23,6 +28,7 @@ namespace BookingMovieTickets.Extensions
             services.AddScoped<IMovieRepository, MovieRepository>();
             services.AddScoped<ICinemaRepository, CinemaRepository>();
             services.AddScoped<IStatsRepository, StatsRepository>();
+            services.AddScoped<ISeatRepository, SeatRepository>();
             return services;
         }
 

@@ -23,8 +23,6 @@ public partial class Seat : BaseEntity
     [StringLength(20)]
     public string? SeatType { get; set; }
 
-    public bool? IsAvailable { get; set; }
-
     public virtual Room Room { get; set; } = null!;
 
     public virtual ICollection<BookingSeat> BookingSeats { get; set; } = new List<BookingSeat>();

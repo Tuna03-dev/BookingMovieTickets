@@ -606,6 +606,9 @@ export interface components {
       fullName?: string | null;
       phoneNumber?: string | null;
       address?: string | null;
+      imageUrl?: string | null;
+      /** Format: date-time */
+      dateOfBirth?: string | null;
       /** Format: date-time */
       createdAt?: string | null;
       /** Format: date-time */

@@ -35,6 +35,11 @@ public partial class User : IdentityUser<Guid>
     [StringLength(255)]
     public string? Address { get; set; }
 
+    [StringLength(255)]
+    public string? ImageUrl { get; set; }
+
+    public DateTime? DateOfBirth { get; set; }
+
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public DateTime? DeletedAt { get; set; }
