@@ -10,6 +10,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using Microsoft.AspNetCore.OData;
 using Microsoft.OData.ModelBuilder;
+using CloudinaryDotNet;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -114,6 +115,17 @@ builder.Services.AddSwaggerGen(c =>
     };
 
     c.AddSecurityRequirement(securityRequirement);
+});
+
+builder.Services.AddSingleton(provider =>
+{
+    var config = provider.GetRequiredService<IConfiguration>();
+    var cloudinaryAccount = new CloudinaryDotNet.Account(
+        config["CloudinarySettings:CloudName"],
+        config["CloudinarySettings:ApiKey"],
+        config["CloudinarySettings:ApiSecret"]
+    );
+    return new CloudinaryDotNet.Cloudinary(cloudinaryAccount);
 });
 
 var app = builder.Build();

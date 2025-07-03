@@ -7,8 +7,7 @@ import axios, {
 import { ENV } from "./env.config";
 
 const getAccessToken = (): string | null => localStorage.getItem("accessToken");
-const getRefreshToken = (): string | null =>
-  localStorage.getItem("refreshToken");
+
 const setAccessToken = (token: string): void =>
   localStorage.setItem("accessToken", token);
 const removeTokens = (): void => {
@@ -46,19 +45,18 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const refreshToken = getRefreshToken();
-        if (refreshToken) {
-          const response = await axios.post<{ accessToken: string }>(
-            `${ENV.API_URL}/auth/refresh`,
-            { refreshToken }
-          );
-          const newAccessToken = response.data.accessToken;
-          setAccessToken(newAccessToken);
+        
+        const response = await axios.post<{ accessToken: string }>(
+          `${ENV.API_URL}/auth/refresh`,
+          {},
+          { withCredentials: true }
+        );
+        const newAccessToken = response.data.accessToken;
+        setAccessToken(newAccessToken);
 
-          originalRequest.headers = originalRequest.headers || {};
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          return axios(originalRequest);
-        }
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return axios(originalRequest);
       } catch (refreshError) {
         removeTokens();
         window.location.href = "/login";
@@ -68,7 +66,7 @@ axiosInstance.interceptors.response.use(
 
     if (error.response?.status === 401) {
       removeTokens();
-      window.location.href = "/auth/login";
+      window.location.href = "/login";
     }
 
     return Promise.reject(error);

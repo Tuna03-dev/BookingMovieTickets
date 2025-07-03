@@ -31,24 +31,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
-import type { PaginatedResponse } from "../../types/paginated-response";
 
-interface ServerPaginatedTableProps<TData, TValue> {
+interface ServerODataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
-  initialData?: PaginatedResponse<TData>;
+  initialData?: { value: TData[]; totalCount: number };
   searchKey?: string;
   searchPlaceholder?: string;
   pageSizeOptions?: number[];
   defaultPageSize?: number;
   onPaginationChange: (
-    pageNumber: number,
+    pageIndex: number, // 0-based
     pageSize: number
-  ) => Promise<PaginatedResponse<TData>>;
+  ) => Promise<{ value: TData[]; totalCount: number }>;
   onSearchChange?: (
     searchTerm: string,
-    pageNumber: number,
+    pageIndex: number,
     pageSize: number
-  ) => Promise<PaginatedResponse<TData>>;
+  ) => Promise<{ value: TData[]; totalCount: number }>;
 }
 
 export function DataTableServerSide<TData, TValue>({
@@ -60,18 +59,19 @@ export function DataTableServerSide<TData, TValue>({
   defaultPageSize = 10,
   onPaginationChange,
   onSearchChange,
-}: ServerPaginatedTableProps<TData, TValue>) {
-  // State for the paginated data
-  const [paginatedData, setPaginatedData] =
-    useState<PaginatedResponse<TData> | null>(initialData || null);
+}: ServerODataTableProps<TData, TValue>) {
+  // State for the OData data
+  const [odataData, setOdataData] = useState<{ value: TData[]; totalCount: number }>(
+    initialData || { value: [], totalCount: 0 }
+  );
   const [isLoading, setIsLoading] = useState(!initialData);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
   // Initialize with default values or from initialData
   const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: initialData ? initialData.pageNumber - 1 : 0, // Convert 1-based to 0-based
-    pageSize: initialData?.pageSize || defaultPageSize,
+    pageIndex: 0,
+    pageSize: initialData ? initialData.value.length : defaultPageSize,
   });
 
   // Handle search term debounce
@@ -79,55 +79,35 @@ export function DataTableServerSide<TData, TValue>({
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
     }, 500);
-
-    return () => {
-      clearTimeout(handler);
-    };
+    return () => clearTimeout(handler);
   }, [searchTerm]);
-
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Convert from 0-based to 1-based page number for the API
-        const pageNumber = pagination.pageIndex + 1;
-        const pageSize = pagination.pageSize;
-
-        let response: PaginatedResponse<TData>;
-
+        const { pageIndex, pageSize } = pagination;
+        let response: { value: TData[]; totalCount: number };
         if (debouncedSearchTerm && onSearchChange) {
-          response = await onSearchChange(
-            debouncedSearchTerm,
-            pageNumber,
-            pageSize
-          );
+          response = await onSearchChange(debouncedSearchTerm, pageIndex, pageSize);
         } else {
-          response = await onPaginationChange(pageNumber, pageSize);
+          response = await onPaginationChange(pageIndex, pageSize);
         }
-
-        setPaginatedData(response);
+        setOdataData(response);
       } catch (error) {
         console.error("Failed to fetch data:", error);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchData();
-  }, [
-    pagination.pageIndex,
-    pagination.pageSize,
-    debouncedSearchTerm,
-    onPaginationChange,
-    onSearchChange,
-  ]);
+  }, [pagination.pageIndex, pagination.pageSize, debouncedSearchTerm, onPaginationChange, onSearchChange]);
 
   // Set up the table
   const table = useReactTable({
-    data: paginatedData?.items || [],
+    data: odataData.value || [],
     columns,
-    pageCount: paginatedData?.totalPages || -1,
+    pageCount: Math.ceil(odataData.totalCount / pagination.pageSize),
     state: {
       pagination,
     },
@@ -137,6 +117,9 @@ export function DataTableServerSide<TData, TValue>({
     manualSorting: true,
     manualFiltering: true,
   });
+
+  const totalPages = Math.ceil(odataData.totalCount / pagination.pageSize);
+  const currentPage = pagination.pageIndex + 1;
 
   return (
     <div className="space-y-4">
@@ -151,7 +134,6 @@ export function DataTableServerSide<TData, TValue>({
           />
         </div>
       )}
-
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -173,38 +155,26 @@ export function DataTableServerSide<TData, TValue>({
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   <div className="flex justify-center items-center">
                     <Loader2 className="h-6 w-6 animate-spin mr-2" />
                     Loading data...
                   </div>
                 </TableCell>
               </TableRow>
-            ) : paginatedData?.items?.length ? (
+            ) : odataData.value?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
+                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   No results found.
                 </TableCell>
               </TableRow>
@@ -212,9 +182,8 @@ export function DataTableServerSide<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-
       {/* Pagination Controls */}
-      {paginatedData && (
+      {odataData && (
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <p className="text-sm text-muted-foreground">Rows per page</p>
@@ -238,14 +207,14 @@ export function DataTableServerSide<TData, TValue>({
           </div>
           <div className="flex items-center space-x-6 lg:space-x-8">
             <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-              Page {paginatedData.pageNumber} of {paginatedData.totalPages}
+              Page {currentPage} of {totalPages}
             </div>
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
                 className="hidden h-8 w-8 p-0 lg:flex"
                 onClick={() => table.setPageIndex(0)}
-                disabled={!paginatedData.hasPreviousPage || isLoading}
+                disabled={pagination.pageIndex === 0 || isLoading}
               >
                 <span className="sr-only">Go to first page</span>
                 <ChevronsLeft className="h-4 w-4" />
@@ -254,7 +223,7 @@ export function DataTableServerSide<TData, TValue>({
                 variant="outline"
                 className="h-8 w-8 p-0"
                 onClick={() => table.previousPage()}
-                disabled={!paginatedData.hasPreviousPage || isLoading}
+                disabled={pagination.pageIndex === 0 || isLoading}
               >
                 <span className="sr-only">Go to previous page</span>
                 <ChevronLeft className="h-4 w-4" />
@@ -263,7 +232,7 @@ export function DataTableServerSide<TData, TValue>({
                 variant="outline"
                 className="h-8 w-8 p-0"
                 onClick={() => table.nextPage()}
-                disabled={!paginatedData.hasNextPage || isLoading}
+                disabled={currentPage === totalPages || isLoading}
               >
                 <span className="sr-only">Go to next page</span>
                 <ChevronRight className="h-4 w-4" />
@@ -271,8 +240,8 @@ export function DataTableServerSide<TData, TValue>({
               <Button
                 variant="outline"
                 className="hidden h-8 w-8 p-0 lg:flex"
-                onClick={() => table.setPageIndex(paginatedData.totalPages - 1)}
-                disabled={!paginatedData.hasNextPage || isLoading}
+                onClick={() => table.setPageIndex(totalPages - 1)}
+                disabled={currentPage === totalPages || isLoading}
               >
                 <span className="sr-only">Go to last page</span>
                 <ChevronsRight className="h-4 w-4" />
@@ -281,12 +250,10 @@ export function DataTableServerSide<TData, TValue>({
           </div>
         </div>
       )}
-
       {/* Pagination Summary */}
-      {paginatedData && (
+      {odataData && (
         <div className="text-sm text-muted-foreground">
-          Showing {paginatedData.items.length} of {paginatedData.totalItems}{" "}
-          items
+          Showing {odataData.value.length} of {odataData.totalCount} items
         </div>
       )}
     </div>

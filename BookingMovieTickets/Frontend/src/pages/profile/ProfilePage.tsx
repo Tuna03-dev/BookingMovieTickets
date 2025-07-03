@@ -15,24 +15,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAppSelector } from "@/store";
 
 export default function ProfilePage() {
-  const user = {
-    firstName: "Nguyễn",
-    lastName: "Văn A",
-    email: "nguyenvana@example.com",
-    phone: "0123 456 789",
-    joinDate: "2023-01-15",
-    totalBookings: 24,
-    totalSpent: 4320000,
-    avatar: "/placeholder.svg?height=120&width=120",
-  };
+  const user = useAppSelector((state) => state.auth.user);
+  const avatar = user?.imageUrl || "/placeholder.svg?height=120&width=120";
+  const fullName = user?.fullName || "Chưa cập nhật";
+  const email = user?.email || "Chưa cập nhật";
+  const phone = user?.phoneNumber || "Chưa cập nhật";
+  const joinDate = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString("vi-VN")
+    : "-";
+  const totalBookings = user?.totalBookings ?? 0;
+  const totalSpent = user?.totalSpent ?? 0;
 
   const quickStats = [
-    { label: "Lượt đặt vé", value: user.totalBookings, icon: Ticket },
+    { label: "Lượt đặt vé", value: totalBookings, icon: Ticket },
     {
       label: "Tổng chi tiêu",
-      value: `${user.totalSpent.toLocaleString("vi-VN")}₫`,
+      value: `${totalSpent.toLocaleString()}₫`,
       icon: CreditCard,
     },
   ];
@@ -58,24 +59,17 @@ export default function ProfilePage() {
               <CardHeader className="text-center pb-4">
                 <div className="relative mx-auto mb-4">
                   <Avatar className="w-24 h-24 border-4 border-red-600 shadow">
-                    <AvatarImage
-                      src={user.avatar || "/placeholder.svg"}
-                      alt={`${user.firstName} ${user.lastName}`}
-                    />
+                    <AvatarImage src={avatar} alt={fullName} />
                     <AvatarFallback className="text-2xl bg-white">
-                      {user.firstName[0]}
-                      {user.lastName[0]}
+                      {fullName
+                        .split(" ")
+                        .map((w) => w[0])
+                        .join("")}
                     </AvatarFallback>
                   </Avatar>
-                  <Button
-                    size="sm"
-                    className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0 bg-red-600 hover:bg-red-700 shadow"
-                  >
-                    <Camera className="h-4 w-4" />
-                  </Button>
                 </div>
                 <CardTitle className="text-white text-xl font-bold">
-                  {user.firstName} {user.lastName}
+                  {fullName}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6 text-white">
@@ -83,18 +77,15 @@ export default function ProfilePage() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <Mail className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm">{user.email}</span>
+                    <span className="text-sm">{email}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Phone className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm">{user.phone}</span>
+                    <span className="text-sm">{phone}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Calendar className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm">
-                      Tham gia:{" "}
-                      {new Date(user.joinDate).toLocaleDateString("vi-VN")}
-                    </span>
+                    <span className="text-sm">Tham gia: {joinDate}</span>
                   </div>
                 </div>
 
@@ -136,7 +127,7 @@ export default function ProfilePage() {
                     <CardContent className="p-4 text-center text-white">
                       <stat.icon className="h-8 w-8 text-red-500 mx-auto mb-2" />
                       <div className="text-2xl font-bold text-white">
-                        {stat.value}
+                        {String(stat.value)}
                       </div>
                       <div className="text-xs text-gray-400">{stat.label}</div>
                     </CardContent>

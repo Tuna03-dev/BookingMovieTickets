@@ -68,5 +68,16 @@ namespace BookingMovieTickets.Controllers
                 return StatusCode(500, new { message = "An error occurred while fetching booked seats", error = ex.Message });
             }
         }
+
+        [HttpGet]
+        public IActionResult GetSeats([FromQuery] int skip = 0, [FromQuery] int top = 10)
+        {
+            //// Giả sử _context là BookingMovieTicketsContext, inject vào controller
+            //var query = _context.Seats;
+            //var total = query.Count();
+            //var items = query.OrderBy(x => x.Row).ThenBy(x => x.SeatColumn).Skip(skip).Take(top).ToList();
+            //return Ok(new { value = items, totalCount = total });
+            return Ok();
+        }
     }
 } 

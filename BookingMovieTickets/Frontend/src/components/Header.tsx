@@ -37,12 +37,10 @@ export function Header() {
       await authAPI.logout();
     } catch (error) {
       console.error("Logout failed:", error);
-      
     }
     dispatch(logout());
     navigate("/");
   };
-
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -56,7 +54,6 @@ export function Header() {
     setLoadingSearch(true);
     searchTimeout.current = setTimeout(async () => {
       try {
-
         const data = await movieApis.getOdataMovies(`$top=30`);
         const filtered = (Array.isArray(data) ? data : []).filter((movie) =>
           movie.title?.toLowerCase().includes(value.toLowerCase())
@@ -80,14 +77,13 @@ export function Header() {
     if (inputRef.current) inputRef.current.blur();
   };
 
-
   React.useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as Node;
 
       const isClickInsideInput = inputRef.current?.contains(target);
       const isClickInsideDropdown = dropdownRef.current?.contains(target);
-      
+
       if (!isClickInsideInput && !isClickInsideDropdown) {
         setShowDropdown(false);
       }
@@ -152,14 +148,16 @@ export function Header() {
               autoComplete="off"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && searchTerm.trim()) {
-                  navigate(`/movies?search=${encodeURIComponent(searchTerm.trim())}`);
+                  navigate(
+                    `/movies?search=${encodeURIComponent(searchTerm.trim())}`
+                  );
                   setShowDropdown(false);
                 }
               }}
             />
             {/* Dropdown search results */}
             {showDropdown && searchResults.length > 0 && (
-              <div 
+              <div
                 ref={dropdownRef}
                 className="absolute left-0 right-0 mt-2 bg-gray-900 border border-gray-800 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto"
               >
@@ -254,7 +252,7 @@ export function Header() {
                   Đăng nhập
                 </Button>
               </Link>
-              <Link to="/signup">
+              <Link to="/register">
                 <Button className="bg-red-600 hover:bg-red-700">Đăng ký</Button>
               </Link>
             </div>

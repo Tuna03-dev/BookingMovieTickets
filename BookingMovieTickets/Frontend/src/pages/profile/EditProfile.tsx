@@ -2,7 +2,7 @@ import type React from "react";
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, CalendarIcon, Camera, Save, X } from "lucide-react";
+import { ArrowLeft, Camera, Save, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -27,54 +27,64 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { toast } from "sonner";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
+
+import authAPI from "@/services/auth/authAPI";
+import { useAppSelector, useAppDispatch } from "@/store";
+import { setUser } from "@/store/slices/authSlice";
+import type { User } from "@/store/slices/authSlice";
 
 const profileSchema = z.object({
   fullName: z.string().min(2, "Họ tên phải có ít nhất 2 ký tự"),
   email: z.string().email("Email không hợp lệ"),
   phone: z.string().min(10, "Số điện thoại phải có ít nhất 10 số"),
-  dateOfBirth: z.date().max(new Date(), "Ngày sinh không thể trong tương lai"),
-  location: z.string().optional(),
-  emailNotifications: z.boolean(),
-  smsNotifications: z.boolean(),
-  marketingEmails: z.boolean(),
-  profileVisibility: z.enum(["public", "private", "friends"]),
+  dateOfBirth: z
+    .string()
+    .refine((val) => !isNaN(Date.parse(val)), "Ngày sinh không hợp lệ"),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 export default function EditProfilePage() {
+  const user = useAppSelector((state) => state.auth.user);
+  const currentUser = user
+    ? {
+        fullName: user.fullName || "",
+        email: user.email || "",
+        phone: user.phoneNumber || "",
+        dateOfBirth: user.dateOfBirth
+          ? user.dateOfBirth.slice(0, 10)
+          : "1990-01-01",
+        avatar: user.imageUrl || "/placeholder.svg?height=120&width=120",
+      }
+    : {
+        fullName: "",
+        email: "",
+        phone: "",
+        dateOfBirth: "1990-01-01",
+        avatar: "/placeholder.svg?height=120&width=120",
+      };
+
   const [isLoading, setIsLoading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-
-  const currentUser = {
-    fullName: "Nguyễn Văn A",
-    email: "nguyenvana@example.com",
-    phone: "0123456789",
-    dateOfBirth: new Date("1990-01-01"),
-    location: "Hà Nội, Việt Nam",
-    emailNotifications: true,
-    smsNotifications: false,
-    marketingEmails: true,
-    profileVisibility: "public" as const,
-    avatar: "/placeholder.svg?height=120&width=120",
-  };
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string>(currentUser.avatar);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
-    defaultValues: currentUser,
+    defaultValues: {
+      fullName: currentUser.fullName,
+      email: currentUser.email,
+      phone: currentUser.phone,
+      dateOfBirth: currentUser.dateOfBirth,
+    },
   });
+
+  const dispatch = useAppDispatch();
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setAvatarFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarPreview(reader.result as string);
@@ -86,14 +96,36 @@ export default function EditProfilePage() {
   const onSubmit = async (data: ProfileFormData) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      toast.success("Cập nhật hồ sơ thành công!");
-
-      console.log("Profile data:", data);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      let uploadedAvatarUrl = avatarUrl;
+      if (avatarFile) {
+        const res = await authAPI.uploadAvatar(avatarFile);
+        const uploaded = res.data as { imageUrl: string };
+        uploadedAvatarUrl = uploaded.imageUrl;
+        setAvatarUrl(uploadedAvatarUrl);
+        setAvatarFile(null);
+        setAvatarPreview(null);
+      }
+      const resUpdate = await authAPI.updateProfile({
+        fullName: data.fullName,
+        phoneNumber: data.phone,
+        dateOfBirth: new Date(data.dateOfBirth).toISOString(),
+      });
+      // Validate the response
+      if (resUpdate && typeof resUpdate === "object") {
+        const userData = resUpdate as User;
+        const updatedUser: User = {
+          ...userData,
+          email: data.email,
+          roles: userData.roles || [],
+          imageUrl: uploadedAvatarUrl,
+        };
+        dispatch(setUser(updatedUser));
+        toast.success("Cập nhật hồ sơ thành công!");
+      } else {
+        throw new Error("Invalid user data returned from API");
+      }
     } catch (error) {
+      console.error("Error updating profile:", error);
       toast.error("Có lỗi khi cập nhật hồ sơ");
     } finally {
       setIsLoading(false);
@@ -141,7 +173,7 @@ export default function EditProfilePage() {
                     <div className="relative">
                       <Avatar className="w-24 h-24">
                         <AvatarImage
-                          src={avatarPreview || currentUser.avatar}
+                          src={avatarPreview || avatarUrl}
                           alt="Ảnh đại diện"
                         />
                         <AvatarFallback className="text-2xl bg-white">
@@ -187,9 +219,12 @@ export default function EditProfilePage() {
                         {avatarPreview && (
                           <Button
                             type="button"
-                            variant="ghost"
+                            variant="destructive"
                             size="sm"
-                            onClick={() => setAvatarPreview(null)}
+                            onClick={() => {
+                              setAvatarPreview(null);
+                              setAvatarFile(null);
+                            }}
                           >
                             <X className="h-4 w-4 mr-1" />
                             Xóa ảnh
@@ -244,6 +279,7 @@ export default function EditProfilePage() {
                               type="email"
                               className="bg-gray-800 border-gray-700 text-white"
                               placeholder="Nhập email"
+                              disabled
                             />
                           </FormControl>
                           <FormMessage />
@@ -278,57 +314,12 @@ export default function EditProfilePage() {
                       render={({ field }) => (
                         <FormItem className="flex flex-col text-white">
                           <FormLabel>Ngày sinh</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  className={cn(
-                                    "bg-gray-800 border-gray-700 text-white",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP")
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-auto p-0"
-                              align="start"
-                            >
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) =>
-                                  date > new Date() ||
-                                  date < new Date("1900-01-01")
-                                }
-                                captionLayout="dropdown"
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="location"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-white">Địa chỉ</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
+                              type="date"
                               className="bg-gray-800 border-gray-700 text-white"
-                              placeholder="Thành phố, Tỉnh/Quốc gia"
+                              placeholder="Chọn ngày sinh"
                             />
                           </FormControl>
                           <FormMessage />

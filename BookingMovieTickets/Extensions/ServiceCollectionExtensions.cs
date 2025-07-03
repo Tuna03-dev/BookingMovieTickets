@@ -20,6 +20,9 @@ namespace BookingMovieTickets.Extensions
             services.AddScoped<IPaymentService, PaymentService>();
             services.AddScoped<IBookingRepository, BookingRepository>();
             services.AddScoped<IBookingSeatRepository, BookingSeatRepository>();
+            services.AddScoped<CloudinaryService>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IUserService, UserService>();
             return services;
         }
 

@@ -9,7 +9,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using BookingMovieTickets.Services;
 using Microsoft.AspNetCore.Authorization;
-
+using BookingMovieTickets.Services.Implements;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace BookingMovieTickets.Controllers.AuthCtrl
 {
@@ -22,14 +23,16 @@ namespace BookingMovieTickets.Controllers.AuthCtrl
         private readonly IJwtService _jwtService;
         private readonly IRedisService _redisService;
         private readonly JwtSettings _jwtSettings;
+        private readonly CloudinaryService _cloudinaryService;
 
-        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IJwtService jwtService, IRedisService redisService, IOptions<JwtSettings> jwtSettings)
+        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IJwtService jwtService, IRedisService redisService, IOptions<JwtSettings> jwtSettings, CloudinaryService cloudinaryService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _jwtService = jwtService;
             _redisService = redisService;
             _jwtSettings = jwtSettings.Value;
+            _cloudinaryService = cloudinaryService;
         }
 
         [HttpPost("login")]
@@ -77,7 +80,10 @@ namespace BookingMovieTickets.Controllers.AuthCtrl
                 UserName = request.Email,
                 Email = request.Email,
                 FullName = request.FullName,
-                PhoneNumber = request.PhoneNumber
+                PhoneNumber = request.PhoneNumber,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);
@@ -166,8 +172,84 @@ namespace BookingMovieTickets.Controllers.AuthCtrl
                 address = user.Address,
                 imageUrl = user.ImageUrl,
                 dateOfBirth = user.DateOfBirth,
+                createdAt = user.CreatedAt,
                 roles = roles
             });
+        }
+
+        [Authorize]
+        [HttpPut("me")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return Unauthorized();
+            if (!string.IsNullOrEmpty(request.FullName)) user.FullName = request.FullName;
+            if (!string.IsNullOrEmpty(request.PhoneNumber)) user.PhoneNumber = request.PhoneNumber;
+            if (!string.IsNullOrEmpty(request.Address)) user.Address = request.Address;
+            if (request.DateOfBirth.HasValue) user.DateOfBirth = request.DateOfBirth;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _userManager.UpdateAsync(user);
+            var roles = await _userManager.GetRolesAsync(user);
+            return Ok(new
+            {
+                id = user.Id,
+                email = user.Email,
+                fullName = user.FullName,
+                phoneNumber = user.PhoneNumber,
+                address = user.Address,
+                imageUrl = user.ImageUrl,
+                dateOfBirth = user.DateOfBirth,
+                createdAt = user.CreatedAt,
+                roles = roles
+            });
+        }
+
+        [Authorize]
+        [HttpPost("me/avatar")]
+        public async Task<IActionResult> UploadAvatar([FromForm] IFormFile file)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return Unauthorized();
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded");
+            
+            var imageUrl = await _cloudinaryService.UploadImageAsync(file);
+            user.ImageUrl = imageUrl;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _userManager.UpdateAsync(user);
+            return Ok(new UploadAvatarResponse { ImageUrl = imageUrl });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("users")]
+        public async Task<IActionResult> GetUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            var users = _userManager.Users
+                .OrderByDescending(u => u.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+            var total = _userManager.Users.Count();
+            var result = users.Select(u => new {
+                id = u.Id,
+                email = u.Email,
+                fullName = u.FullName,
+                phoneNumber = u.PhoneNumber,
+                address = u.Address,
+                imageUrl = u.ImageUrl,
+                dateOfBirth = u.DateOfBirth,
+                createdAt = u.CreatedAt,
+                updatedAt = u.UpdatedAt
+            });
+            return Ok(new { value = result, totalCount = total });
         }
     }
 } 
