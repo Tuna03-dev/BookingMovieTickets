@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace BookingMovieTickets.Repositories
 {
-    public interface IBookingSeatRepository
+    public interface IBookingSeatRepository : IRepository<BookingSeat>
     {
         Task AddRangeAsync(IEnumerable<BookingSeat> bookingSeats);
         Task<List<BookingSeat>> GetBookedSeatsByShowtimeAsync(Guid showtimeId, List<Guid> seatIds);

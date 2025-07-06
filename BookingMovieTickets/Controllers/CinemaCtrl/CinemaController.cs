@@ -57,9 +57,9 @@ namespace BookingMovieTickets.Controllers.CinemaCtrl
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(Guid id)
         {
-            var result = await _cinemaService.DeleteAsync(id);
-            if (!result)
-                return NotFound();
+            var (success, errorMessage) = await _cinemaService.DeleteAsync(id);
+            if (!success)
+                return BadRequest(new { message = errorMessage });
 
             return NoContent();
         }

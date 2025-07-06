@@ -1,129 +1,155 @@
-import type React from "react";
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
+import type { Movie } from "@/services/movieApis";
+import { showtimeCalendarApi } from "@/services/showtimeCalendarApi";
 
-interface ShowtimeDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+export function ShowtimeDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+  roomId,
+  timeSlotId,
+  date,
+  movies,
+  showtime,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSuccess: () => void;
+  roomId: string;
+  timeSlotId: string;
+  date: string;
+  movies: Movie[];
   showtime?: any;
-}
-
-export function ShowtimeDialog({ isOpen, onClose, showtime }: ShowtimeDialogProps) {
-  const [formData, setFormData] = useState({
-    movieId: "",
-    roomId: "",
-    startTime: "",
-    endTime: "",
-    status: "scheduled",
-  });
+}) {
+  const [movieId, setMovieId] = useState("");
+  const [ticketPrice, setTicketPrice] = useState(100000);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (showtime) {
-      setFormData({
-        movieId: showtime.movieId || "",
-        roomId: showtime.roomId || "",
-        startTime: showtime.startTime ? showtime.startTime.slice(0, 16) : "",
-        endTime: showtime.endTime ? showtime.endTime.slice(0, 16) : "",
-        status: showtime.status || "scheduled",
-      });
+    if (showtime && showtime.movieId) {
+      setMovieId(String(showtime.movieId));
+      setTicketPrice(showtime.ticketPrice);
     } else {
-      setFormData({
-        movieId: "",
-        roomId: "",
-        startTime: "",
-        endTime: "",
-        status: "scheduled",
-      });
+      setMovieId("");
+      setTicketPrice(100000);
     }
-  }, [showtime]);
+  }, [showtime, open]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Showtime data:", formData);
-    onClose();
+  const handleSubmit = async () => {
+    if (!movieId || !ticketPrice) {
+      toast.error("Vui lòng chọn phim và nhập giá vé");
+      return;
+    }
+    setLoading(true);
+    try {
+      if (showtime) {
+        await showtimeCalendarApi.updateShowtime({
+          showtimeId: showtime.showtimeId,
+          movieId,
+          ticketPrice,
+        });
+        toast.success("Cập nhật lịch chiếu thành công!");
+      } else {
+        await showtimeCalendarApi.createShowtime({
+          movieId,
+          roomId,
+          timeSlotId,
+          date,
+          ticketPrice,
+        });
+        toast.success("Tạo lịch chiếu thành công!");
+      }
+      onOpenChange(false);
+      onSuccess();
+    } catch (e) {
+      toast.error(
+        showtime ? "Cập nhật lịch chiếu thất bại!" : "Tạo lịch chiếu thất bại!"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>{showtime ? "Edit Showtime" : "Add New Showtime"}</DialogTitle>
-          <DialogDescription>
-            {showtime ? "Update showtime information" : "Add a new showtime"}
-          </DialogDescription>
+          <DialogTitle>
+            {showtime ? "Chỉnh sửa Lịch Chiếu" : "Thêm Lịch Chiếu"}
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="movieId">Movie ID</Label>
-            <Input
-              id="movieId"
-              value={formData.movieId}
-              onChange={(e) => setFormData({ ...formData, movieId: e.target.value })}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="roomId">Room ID</Label>
-            <Input
-              id="roomId"
-              value={formData.roomId}
-              onChange={(e) => setFormData({ ...formData, roomId: e.target.value })}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="startTime">Start Time</Label>
-            <Input
-              id="startTime"
-              type="datetime-local"
-              value={formData.startTime}
-              onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="endTime">End Time</Label>
-            <Input
-              id="endTime"
-              type="datetime-local"
-              value={formData.endTime}
-              onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+        <div className="space-y-4">
+          {showtime && (
+            <div className="flex items-center gap-4 p-2 border rounded bg-muted/30">
+              {showtime.moviePoster && (
+                <img
+                  src={showtime.moviePoster}
+                  alt="Poster"
+                  className="w-16 h-24 object-cover rounded"
+                />
+              )}
+              <div>
+                <div className="font-semibold text-base">
+                  {showtime.movieTitle}
+                </div>
+              </div>
+            </div>
+          )}
+          <div>
+            <label className="block mb-1">Phim</label>
+            <Select value={movieId} onValueChange={setMovieId}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Chọn phim" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="ongoing">Ongoing</SelectItem>
-                <SelectItem value="finished">Finished</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
+                {movies.map((movie) => (
+                  <SelectItem
+                    key={String(movie.movieId)}
+                    value={String(movie.movieId)}
+                  >
+                    {movie.title}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">{showtime ? "Update Showtime" : "Add Showtime"}</Button>
-          </DialogFooter>
-        </form>
+          <div>
+            <label className="block mb-1">Giá vé (VNĐ)</label>
+            <Input
+              type="number"
+              value={ticketPrice}
+              onChange={(e) => setTicketPrice(Number(e.target.value))}
+              min={10000}
+              step={1000}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Hủy
+          </Button>
+          <Button onClick={handleSubmit} disabled={loading}>
+            {loading ? "Đang lưu..." : showtime ? "Lưu" : "Tạo"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-} 
+}

@@ -4,11 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-public interface IRoomRepository
+namespace BookingMovieTickets.Repositories
 {
-    IQueryable<Room> GetRooms();
-    Task<Room?> GetRoomByIdAsync(Guid id);
-    Task AddRoomAsync(Room room);
-    Task UpdateRoomAsync(Room room);
-    Task DeleteRoomAsync(Guid id);
+    public interface IRoomRepository : IRepository<Room>
+    {
+        IQueryable<Room> GetRooms();
+    }
 } 

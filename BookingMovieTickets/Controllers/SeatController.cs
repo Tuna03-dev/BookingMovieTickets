@@ -1,11 +1,17 @@
-using Microsoft.AspNetCore.Mvc;
-using BookingMovieTickets.Services;
 using BookingMovieTickets.DTOs;
+using BookingMovieTickets.DTOs.Responses;
+using BookingMovieTickets.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace BookingMovieTickets.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    // [Authorize] // Tạm thời bỏ để test
     public class SeatController : ControllerBase
     {
         private readonly ISeatService _seatService;
@@ -15,69 +21,93 @@ namespace BookingMovieTickets.Controllers
             _seatService = seatService;
         }
 
-        [HttpGet("showtime/{showtimeId}")]
-        public async Task<ActionResult<SeatStatusDTO>> GetSeatStatusByShowtime(Guid showtimeId)
+        [HttpGet("room/{roomId}")]
+        public async Task<ActionResult<List<SeatResponseDTO>>> GetSeatsByRoom(Guid roomId)
         {
-            try
-            {
-                var seatStatus = await _seatService.GetSeatStatusByShowtimeAsync(showtimeId);
-                return Ok(seatStatus);
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An error occurred while fetching seat status", error = ex.Message });
-            }
+            var seats = await _seatService.GetSeatsByRoomAsync(roomId);
+            return Ok(seats);
         }
 
-        [HttpGet("showtime/{showtimeId}/available")]
-        public async Task<ActionResult<List<SeatDTO>>> GetAvailableSeatsByShowtime(Guid showtimeId)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<SeatResponseDTO>> GetById(Guid id)
         {
-            try
-            {
-                var availableSeats = await _seatService.GetAvailableSeatsByShowtimeAsync(showtimeId);
-                return Ok(availableSeats);
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An error occurred while fetching available seats", error = ex.Message });
-            }
+            var seat = await _seatService.GetByIdAsync(id);
+            if (seat == null)
+                return NotFound();
+
+            return Ok(seat);
         }
 
-        [HttpGet("showtime/{showtimeId}/booked")]
-        public async Task<ActionResult<List<Guid>>> GetBookedSeatIdsByShowtime(Guid showtimeId)
+        [HttpPost]
+        public async Task<ActionResult<SeatResponseDTO>> Create(CreateSeatDTO createSeatDTO)
         {
-            try
-            {
-                var bookedSeatIds = await _seatService.GetBookedSeatIdsByShowtimeAsync(showtimeId);
-                return Ok(bookedSeatIds);
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An error occurred while fetching booked seats", error = ex.Message });
-            }
+            var seat = await _seatService.CreateAsync(createSeatDTO);
+            return CreatedAtAction(nameof(GetById), new { id = seat.SeatId }, seat);
         }
 
-        [HttpGet]
-        public IActionResult GetSeats([FromQuery] int skip = 0, [FromQuery] int top = 10)
+        [HttpPut("{id}")]
+        public async Task<ActionResult<SeatResponseDTO>> Update(Guid id, UpdateSeatDTO updateSeatDTO)
         {
-            //// Giả sử _context là BookingMovieTicketsContext, inject vào controller
-            //var query = _context.Seats;
-            //var total = query.Count();
-            //var items = query.OrderBy(x => x.Row).ThenBy(x => x.SeatColumn).Skip(skip).Take(top).ToList();
-            //return Ok(new { value = items, totalCount = total });
-            return Ok();
+            var seat = await _seatService.UpdateAsync(id, updateSeatDTO);
+            if (seat == null)
+                return NotFound();
+
+            return Ok(seat);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> Delete(Guid id)
+        {
+            var result = await _seatService.DeleteAsync(id);
+            if (!result)
+                return NotFound();
+
+            return NoContent();
+        }
+
+        [HttpPost("generate-layout")]
+        public async Task<ActionResult<List<SeatResponseDTO>>> GenerateSeatLayout(SeatLayoutDTO layoutDTO)
+        {
+            var seats = await _seatService.GenerateSeatLayoutAsync(layoutDTO);
+            return Ok(seats);
+        }
+
+        [HttpDelete("bulk")]
+        public async Task<ActionResult> DeleteSeats(BulkDeleteSeatsDTO bulkDeleteDTO)
+        {
+            var result = await _seatService.DeleteSeatsAsync(bulkDeleteDTO.SeatIds);
+            if (!result)
+                return BadRequest("Không thể xóa một số ghế");
+
+            return NoContent();
+        }
+
+        [HttpGet("stats/{roomId}")]
+        public async Task<ActionResult<SeatStatsDTO>> GetSeatStats(Guid roomId)
+        {
+            var stats = await _seatService.GetSeatStatsAsync(roomId);
+            return Ok(stats);
+        }
+
+        [HttpGet("room/{roomId}/has-booking")]
+        public async Task<ActionResult<bool>> RoomHasBooking(Guid roomId)
+        {
+            var hasBooking = await _seatService.RoomHasBookingAsync(roomId);
+            return Ok(hasBooking);
+        }
+
+        [HttpPost("add-row/{roomId}")]
+        public async Task<ActionResult<List<SeatResponseDTO>>> AddRow(Guid roomId)
+        {
+            var result = await _seatService.AddRowAsync(roomId);
+            return Ok(result);
+        }
+
+        [HttpPost("add-column/{roomId}")]
+        public async Task<ActionResult<List<SeatResponseDTO>>> AddColumn(Guid roomId)
+        {
+            var result = await _seatService.AddColumnAsync(roomId);
+            return Ok(result);
         }
     }
 } 

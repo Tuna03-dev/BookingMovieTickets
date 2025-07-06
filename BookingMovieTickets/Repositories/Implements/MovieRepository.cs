@@ -1,4 +1,5 @@
 ﻿using BookingMovieTickets.Data;
+using BookingMovieTickets.DTOs;
 using BookingMovieTickets.DTOs.Responses;
 using BookingMovieTickets.Models;
 using BookingMovieTickets.Repositories.Implements;
@@ -8,18 +9,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
-using BookingMovieTickets.DTOs;
 
 namespace BookingMovieTickets.Repositories.Implements
 {
     public class MovieRepository : BaseRepository<Movie>, IMovieRepository
     {
-        private readonly BookingMovieTicketsContext _context;
         private readonly IMapper _mapper;
 
         public MovieRepository(BookingMovieTicketsContext context, IMapper mapper) : base(context)
         {
-            _context = context;
             _mapper = mapper;
         }
 
@@ -43,11 +41,39 @@ namespace BookingMovieTickets.Repositories.Implements
             };
         }
 
+        public async Task<Movie> AddMovieAsync(CreateMovieDTO dto)
+        {
+            var movie = _mapper.Map<Movie>(dto);
+            movie.MovieId = Guid.NewGuid();
+            movie.CreatedAt = DateTime.UtcNow;
+            movie.UpdatedAt = DateTime.UtcNow;
+            await _dbSet.AddAsync(movie);
+            await _context.SaveChangesAsync();
+            return movie;
+        }
+
+        public async Task<Movie> UpdateMovieAsync(Guid id, UpdateMovieDTO dto)
+        {
+            var movie = await _dbSet.FindAsync(id);
+            if (movie == null) throw new Exception("Movie not found");
+            _mapper.Map(dto, movie);
+            movie.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return movie;
+        }
+
+        public async Task<bool> DeleteMovieAsync(Guid id)
+        {
+            var movie = await _dbSet.FindAsync(id);
+            if (movie == null) return false;
+            _dbSet.Remove(movie);
+            await _context.SaveChangesAsync();
+            return true;
+        }
 
         public async Task<Movie> GetFeaturedMovieAsync()
         {
-           
-            return await _context.Movies
+            return await _dbSet
                 .Where(m => m.ReleaseDate != null && m.ReleaseDate <= DateOnly.FromDateTime(DateTime.Today))
                 .OrderByDescending(m => m.ReleaseDate)
                 .FirstOrDefaultAsync();
@@ -55,8 +81,7 @@ namespace BookingMovieTickets.Repositories.Implements
 
         public async Task<List<Movie>> GetNowShowingMoviesAsync()
         {
-            // Phim đang chiếu: ReleaseDate <= hôm nay
-            return await _context.Movies
+            return await _dbSet
                 .Where(m => m.ReleaseDate != null && m.ReleaseDate <= DateOnly.FromDateTime(DateTime.Today))
                 .OrderByDescending(m => m.ReleaseDate)
                 .ToListAsync();
@@ -64,8 +89,7 @@ namespace BookingMovieTickets.Repositories.Implements
 
         public async Task<List<Movie>> GetComingSoonMoviesAsync()
         {
-            // Phim sắp chiếu: ReleaseDate > hôm nay
-            return await _context.Movies
+            return await _dbSet
                 .Where(m => m.ReleaseDate != null && m.ReleaseDate > DateOnly.FromDateTime(DateTime.Today))
                 .OrderBy(m => m.ReleaseDate)
                 .ToListAsync();
@@ -94,6 +118,36 @@ namespace BookingMovieTickets.Repositories.Implements
                 .ToList();
 
             return cinemaGroups;
+        }
+
+        public async Task<int> SoftDeleteMoviesWithoutShowtimeAsync()
+        {
+            var movies = await _dbSet
+                .Include(m => m.Showtimes)
+                .Where(m => m.Showtimes.Count == 0 && m.DeletedAt == null)
+                .ToListAsync();
+            foreach (var movie in movies)
+            {
+                movie.DeletedAt = DateTime.UtcNow;
+            }
+            await _context.SaveChangesAsync();
+            return movies.Count;
+        }
+
+        public async Task<bool> SoftDeleteMovieByIdAsync(Guid id)
+        {
+            var movie = await _dbSet
+                .Include(m => m.Showtimes)
+                .Where(m => m.MovieId == id && m.DeletedAt == null)
+                .FirstOrDefaultAsync()
+                ;
+            if (movie == null) return false;
+            if (movie.Showtimes.Any())
+                return false;
+
+            movie.DeletedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

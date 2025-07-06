@@ -23,6 +23,8 @@ namespace BookingMovieTickets.Extensions
             services.AddScoped<CloudinaryService>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IRoomService, RoomService>();
+            services.AddScoped<IShowtimeCalendarService, ShowtimeCalendarService>();
             return services;
         }
 
@@ -32,6 +34,9 @@ namespace BookingMovieTickets.Extensions
             services.AddScoped<ICinemaRepository, CinemaRepository>();
             services.AddScoped<IStatsRepository, StatsRepository>();
             services.AddScoped<ISeatRepository, SeatRepository>();
+            services.AddScoped<IRoomRepository, RoomRepository>();
+            services.AddScoped<IShowtimeRepository, ShowtimeRepository>();
+            services.AddScoped<ITimeSlotRepository, TimeSlotRepository>();
             return services;
         }
 

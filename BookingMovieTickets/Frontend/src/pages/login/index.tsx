@@ -42,23 +42,37 @@ export default function LoginPage() {
           accessToken: data.accessToken,
         })
       );
-      const userRes = await authAPI.getCurrentUser();
-      const user = userRes.data as User;
-      console.log("User data:", user);
-      dispatch(setUser(user));
-      toast.success("Đăng nhập thành công!");
-      setTimeout(() => {
-        if (user.roles.includes("Admin")) {
-          navigate("/admin");
-        } else if (user.roles.includes("User")) {
-          navigate("/");
-        } else {
-          navigate("/");
-        }
-      }, 1000);
-    } catch (error: Error | unknown) {
-      console.error("Login error:", error);
-      toast.error("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
+
+      try {
+        const userRes = await authAPI.getCurrentUser();
+        const user = userRes.data as User;
+        console.log("User data:", user);
+        dispatch(setUser(user));
+        toast.success("Đăng nhập thành công!");
+        setTimeout(() => {
+          if (user.roles.includes("Admin")) {
+            navigate("/admin");
+          } else if (user.roles.includes("User")) {
+            navigate("/");
+          } else {
+            navigate("/");
+          }
+        }, 1000);
+      } catch (userError: any) {
+        console.error(
+          "Get user error:",
+          userError.message,
+          userError.response?.data
+        );
+        toast.error("Không thể lấy thông tin người dùng.");
+        navigate("/");
+      }
+    } catch (error: any) {
+      console.error("Login error:", error.message, error.response?.data);
+      toast.error(
+        error.response?.data?.message ||
+          "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin."
+      );
     } finally {
       setIsLoading(false);
     }

@@ -40,5 +40,42 @@ namespace BookingMovieTickets.Controllers
             //return Ok(new { value = items, totalCount = total });
             return Ok();
         }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateShowtime([FromBody] CreateShowtimeDTO dto)
+        {
+            try
+            {
+                var result = await _movieService.CreateShowtimeAsync(dto);
+                return CreatedAtAction(nameof(GetShowtimes), new { id = result.ShowtimeId }, result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while creating showtime", error = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateShowtime(Guid id, [FromBody] ShowtimeUpdateDTO dto)
+        {
+            if (id != dto.ShowtimeId)
+                return BadRequest("ID không khớp");
+            var result = await _movieService.UpdateShowtimeAsync(dto);
+            if (!result) return NotFound();
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteShowtime(Guid id)
+        {
+          
+            var result = await _movieService.DeleteShowtimeAsync(id);
+            if (!result) return NotFound();
+            return NoContent();
+        }
     }
 } 

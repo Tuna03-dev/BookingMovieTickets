@@ -17,5 +17,10 @@ namespace BookingMovieTickets.Repositories
         IQueryable<Movie> GetQueryable();
         Task<Movie?> GetByIdAsync(Guid id);
         Task<List<CinemaShowtimeDTO>> GetShowtimesByMovieAndDateAsync(Guid movieId, DateTime date);
+        Task<Movie> AddMovieAsync(CreateMovieDTO dto);
+        Task<Movie> UpdateMovieAsync(Guid id, UpdateMovieDTO dto);
+        Task<bool> DeleteMovieAsync(Guid id);
+        Task<int> SoftDeleteMoviesWithoutShowtimeAsync();
+        Task<bool> SoftDeleteMovieByIdAsync(Guid id);
     }
 }

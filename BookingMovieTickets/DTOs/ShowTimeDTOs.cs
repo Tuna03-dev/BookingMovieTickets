@@ -48,4 +48,20 @@
         public List<SeatDTO> Seats { get; set; } = new();
         public List<Guid> BookedSeatIds { get; set; } = new();
     }
+
+    public class ShowtimeUpdateDTO
+    {
+        public Guid ShowtimeId { get; set; }
+        public Guid MovieId { get; set; }
+        public decimal TicketPrice { get; set; }
+    }
+
+    public class CreateShowtimeDTO
+    {
+        public Guid MovieId { get; set; }
+        public Guid RoomId { get; set; }
+        public Guid TimeSlotId { get; set; }
+        public DateTime Date { get; set; }
+        public decimal TicketPrice { get; set; }
+    }
 }

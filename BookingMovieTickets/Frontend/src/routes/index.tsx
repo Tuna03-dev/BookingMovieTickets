@@ -37,6 +37,10 @@ const routes: RouteObject[] = [
     children: [
       { index: true, element: <HomePage /> },
       {
+        path: "home",
+        element: <HomePage />,
+      },
+      {
         path: "movies",
         element: <MoviePage />,
       },

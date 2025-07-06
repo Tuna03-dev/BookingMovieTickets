@@ -1,4 +1,5 @@
 using BookingMovieTickets.Models;
+using BookingMovieTickets.Repositories;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
@@ -6,43 +7,22 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using BookingMovieTickets.Data;
 
-public class RoomRepository : IRoomRepository
+namespace BookingMovieTickets.Repositories.Implements
 {
-    private readonly BookingMovieTicketsContext _context;
-    public RoomRepository(BookingMovieTicketsContext context)
+    public class RoomRepository : BaseRepository<Room>, IRoomRepository
     {
-        _context = context;
-    }
-
-    public IQueryable<Room> GetRooms()
-    {
-        return _context.Rooms.Include(r => r.Cinema);
-    }
-
-    public async Task<Room?> GetRoomByIdAsync(Guid id)
-    {
-        return await _context.Rooms.Include(r => r.Cinema).FirstOrDefaultAsync(r => r.RoomId == id);
-    }
-
-    public async Task AddRoomAsync(Room room)
-    {
-        _context.Rooms.Add(room);
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task UpdateRoomAsync(Room room)
-    {
-        _context.Rooms.Update(room);
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task DeleteRoomAsync(Guid id)
-    {
-        var room = await _context.Rooms.FindAsync(id);
-        if (room != null)
+        public RoomRepository(BookingMovieTicketsContext context) : base(context)
         {
-            _context.Rooms.Remove(room);
-            await _context.SaveChangesAsync();
+        }
+
+        public IQueryable<Room> GetRooms()
+        {
+            return _dbSet.Include(r => r.Cinema);
+        }
+
+        public override async Task<Room?> GetByIdAsync(Guid id)
+        {
+            return await _dbSet.Include(r => r.Cinema).FirstOrDefaultAsync(r => r.RoomId == id);
         }
     }
 } 

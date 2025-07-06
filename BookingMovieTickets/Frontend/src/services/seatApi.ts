@@ -1,49 +1,84 @@
 import { httpClient } from "@/config/httpClient";
-import type { components } from "@/types/api-types";
 
-export type Seat = components["schemas"]["Seat"];
-
-export type SeatDTO = {
+export interface Seat {
+  deletedAt: string | null;
   seatId: string;
+  roomId: string;
   row: string;
   seatColumn: number;
-  seatNumber?: string;
-  seatType?: string;
-  isAvailable: boolean;
-};
+  seatNumber: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-export type SeatStatusDTO = {
-  showtimeId: string;
-  seats: SeatDTO[];
-  bookedSeatIds: string[];
-};
+export interface CreateSeatDTO {
+  roomId: string;
+  row: string;
+  seatColumn: number;
+  seatNumber: string;
+}
+
+export interface UpdateSeatDTO {
+  row?: string;
+  seatColumn?: number;
+  seatNumber?: string;
+}
+
+export interface SeatLayoutDTO {
+  roomId: string;
+  rows: number;
+  columns: number;
+}
 
 export const seatApi = {
-  // Lấy trạng thái tất cả ghế cho một showtime
-  getSeatStatusByShowtime: async (
-    showtimeId: string
-  ): Promise<SeatStatusDTO> => {
-    const res = await httpClient.get<SeatStatusDTO>(
-      `/seat/showtime/${showtimeId}`
-    );
-    return res.data;
+  getSeatsByRoom: async (roomId: string): Promise<Seat[]> => {
+    const response = await httpClient.get<Seat[]>(`/Seat/room/${roomId}`);
+    return response.data;
   },
-
-  
-  getAvailableSeatsByShowtime: async (
-    showtimeId: string
-  ): Promise<SeatDTO[]> => {
-    const res = await httpClient.get<SeatDTO[]>(
-      `/seat/showtime/${showtimeId}/available`
-    );
-    return res.data;
+  getSeatById: async (seatId: string): Promise<Seat> => {
+    const response = await httpClient.get<Seat>(`/Seat/${seatId}`);
+    return response.data;
   },
-
-  
-  getBookedSeatIdsByShowtime: async (showtimeId: string): Promise<string[]> => {
-    const res = await httpClient.get<string[]>(
-      `/seat/showtime/${showtimeId}/booked`
+  createSeat: async (seatData: CreateSeatDTO): Promise<Seat> => {
+    const response = await httpClient.post<Seat>("/Seat", seatData);
+    return response.data;
+  },
+  updateSeat: async (
+    seatId: string,
+    seatData: UpdateSeatDTO
+  ): Promise<Seat> => {
+    const response = await httpClient.put<Seat>(`/Seat/${seatId}`, seatData);
+    return response.data;
+  },
+  deleteSeat: async (seatId: string): Promise<void> => {
+    await httpClient.delete(`/Seat/${seatId}`);
+  },
+  generateSeatLayout: async (layoutData: SeatLayoutDTO): Promise<Seat[]> => {
+    const response = await httpClient.post<Seat[]>(
+      "/Seats/generate-layout",
+      layoutData
     );
-    return res.data;
+    return response.data;
+  },
+  deleteSeats: async (seatIds: string[]): Promise<void> => {
+    await httpClient.delete("/Seat/bulk", {
+      data: { seatIds },
+    });
+  },
+  hasBooking: async (roomId: string): Promise<boolean> => {
+    const response = await httpClient.get<boolean>(
+      `/Seat/room/${roomId}/has-booking`
+    );
+    return response.data;
+  },
+  addRow: async (roomId: string): Promise<Seat[]> => {
+    const response = await httpClient.post<Seat[]>(`/Seat/add-row/${roomId}`);
+    return response.data;
+  },
+  addColumn: async (roomId: string): Promise<Seat[]> => {
+    const response = await httpClient.post<Seat[]>(
+      `/Seat/add-column/${roomId}`
+    );
+    return response.data;
   },
 };

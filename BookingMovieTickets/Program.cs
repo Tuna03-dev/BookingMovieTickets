@@ -21,7 +21,7 @@ builder.Services.AddApplicationServices();
 builder.Services.AddRepositories();
 
 // Add AutoMapper
-builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.AddAutoMapper(typeof(Program).Assembly);
 
 builder.Services.AddControllers().AddOData(opt =>
 {

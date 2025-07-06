@@ -12,6 +12,6 @@ namespace BookingMovieTickets.Services
         Task<CinemaResponseDTO?> GetByIdAsync(Guid id);
         Task<CinemaResponseDTO> CreateAsync(CreateCinemaDTO createCinemaDTO);
         Task<CinemaResponseDTO?> UpdateAsync(Guid id, UpdateCinemaDTO updateCinemaDTO);
-        Task<bool> DeleteAsync(Guid id);
+        Task<(bool Success, string? ErrorMessage)> DeleteAsync(Guid id);
     }
 } 
